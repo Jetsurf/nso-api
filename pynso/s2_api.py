@@ -41,31 +41,25 @@ class Splatoon2():
 
 	def get_player_records(self, iksm) -> dict:
 		response = requests.get("https://app.splatoon2.nintendo.net/api/records", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(response.text)
-		return thejson
+		return json.loads(response.text)
 
 	def get_salmon_run(self, iksm) -> dict:
 		response = requests.get("https://app.splatoon2.nintendo.net/api/coop_results", headers=self.s2_coop, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(response.text)
-		return thejson
+		return json.loads(response.text)
 
 	def get_battles(self, iksm) -> dict:
 		response = requests.get("https://app.splatoon2.nintendo.net/api/results", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(response.text)
-		return thejson
+		return json.loads(response.text)
 
 	def get_full_battles(self, battleid, iksm) -> dict:
 		response = requests.get(f"https://app.splatoon2.nintendo.net/api/results/{battleid}", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(response.text)
-		return thejson
+		return json.loads(response.text)
 
 	def get_store_merch(self, iksm) -> dict:
 		response = requests.get("https://app.splatoon2.nintendo.net/api/onlineshop/merchandises", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		thejson = json.loads(response.text)
-		return thejson
+		return json.loads(response.text)
 
 	def order_from_store(self, gearid, override=False, iksm=None) -> dict:
 		payload = { "override" : "1" if override else "0" }
 		response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=app_head, cookies=dict(iksm_session=iksm['iksm']), data=payload)
-
 		return json.loads(response.text)
