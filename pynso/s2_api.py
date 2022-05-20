@@ -2,7 +2,8 @@ import time
 import requests, json
 
 class Splatoon2():
-	def __init__(self):
+	def __init__(self, *args, **options):
+		self.auth = options.get('auth')
 		self.app_timezone_offset = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		self.s2_player = {
 			'Host': 'app.splatoon2.nintendo.net',
@@ -39,27 +40,54 @@ class Splatoon2():
 			'Accept-Language': 'en-us'
 		}
 
-	def get_player_records(self, iksm) -> dict:
-		response = requests.get("https://app.splatoon2.nintendo.net/api/records", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		return json.loads(response.text)
+	def do_get_request(self, snowflake, url, header):
+		response = requests.get(url, headers=header, cookies=dict(iksm_session=self.auth.getGameKey(snowflake).iksm['iksm']))
+		thejson = json.loads(response.text)
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = self.auth.doGameKeyRefresh(snowflake)
+			if iksm == None:
+				return None
+			response = requests.get(url, headers=header, cookies=dict(iksm_session=iksm['iksm']))
+			thejson = json.loads(response.text)
+			if 'AUTHENTICATION_ERROR' in str(thejson):
+				return None
+		return thejson
 
-	def get_salmon_run(self, iksm) -> dict:
-		response = requests.get("https://app.splatoon2.nintendo.net/api/coop_results", headers=self.s2_coop, cookies=dict(iksm_session=iksm['iksm']))
-		return json.loads(response.text)
+	def get_player_records(self, snowflake) -> dict:
+		url = "https://app.splatoon2.nintendo.net/api/records"
+		header = self.s2_player
+		return self.do_get_request(snowflake, url, header)
 
-	def get_battles(self, iksm) -> dict:
-		response = requests.get("https://app.splatoon2.nintendo.net/api/results", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		return json.loads(response.text)
+	def get_salmon_run(self, snowflake) -> dict:
+		url = "https://app.splatoon2.nintendo.net/api/coop_results"
+		header = self.s2_coop
+		return self.do_get_request(snowflake, url, header)
 
-	def get_full_battles(self, battleid, iksm) -> dict:
-		response = requests.get(f"https://app.splatoon2.nintendo.net/api/results/{battleid}", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		return json.loads(response.text)
+	def get_battles(self, snowflake) -> dict:
+		url = "https://app.splatoon2.nintendo.net/api/results"
+		header = self.s2_player
+		return self.do_get_request(snowflake, url, header)
 
-	def get_store_merch(self, iksm) -> dict:
-		response = requests.get("https://app.splatoon2.nintendo.net/api/onlineshop/merchandises", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
-		return json.loads(response.text)
+	def get_full_battles(self, battleid, snowflake) -> dict:
+		url = f"https://app.splatoon2.nintendo.net/api/results/{battleid}"
+		header = self.s2_player
+		return self.do_get_request(snowflake, url, header)
 
-	def order_from_store(self, gearid, override=False, iksm=None) -> dict:
+	def get_store_merch(self, snowflake) -> dict:
+		url = "https://app.splatoon2.nintendo.net/api/onlineshop/merchandises"
+		header = self.s2_player
+		return self.do_get_request(snowflake, url, header)
+
+	def order_from_store(self, gearid, override=False, snowflake=None) -> dict:
 		payload = { "override" : "1" if override else "0" }
-		response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=app_head, cookies=dict(iksm_session=iksm['iksm']), data=payload)
-		return json.loads(response.text)
+		response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=self.s2_player, cookies=dict(iksm_session=self.auth.getGameKey(snowflake).iksm['iksm']), data=payload)
+		thejson = json.loads(response.text)
+		if 'AUTHENTICATION_ERROR' in str(thejson):
+			iksm = self.auth.doGameKeyRefresh(snowflake)
+			if iksm == None:
+				return None
+			response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=self.s2_player, cookies=dict(iksm_session=iksm['iksm']))
+			thejson = json.loads(response.text)
+			if 'AUTHENTICATION_ERROR' in str(thejson):
+				return None
+		return thejson
