@@ -198,7 +198,6 @@ class nso_authentication():
 
 	#This method will always return the root key path for a game
 	def doGameKeyRefresh(self, snowflake, game='s2') -> Optional[dict]:
--+--
 		session_token = self.__get_session_token_mysql(snowflake)
 		keys = self.__setup_nso(session_token, game)
 
