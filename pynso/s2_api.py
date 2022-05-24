@@ -41,7 +41,7 @@ class Splatoon2():
 		}
 
 	def do_get_request(self, snowflake, url, header):
-		response = requests.get(url, headers=header, cookies=dict(iksm_session=self.auth.getGameKey(snowflake).iksm['iksm']))
+		response = requests.get(url, headers=header, cookies=dict(iksm_session=self.auth.getGameKey(snowflake, 's2.iksm')))
 		thejson = json.loads(response.text)
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = self.auth.doGameKeyRefresh(snowflake)
@@ -80,8 +80,9 @@ class Splatoon2():
 
 	def order_from_store(self, gearid, override=False, snowflake=None) -> dict:
 		payload = { "override" : "1" if override else "0" }
-		response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=self.s2_player, cookies=dict(iksm_session=self.auth.getGameKey(snowflake).iksm['iksm']), data=payload)
+		response = requests.post(f"https://app.splatoon2.nintendo.net/api/onlineshop/order/{gearid}", headers=self.s2_player, cookies=dict(iksm_session=self.auth.getGameKey(snowflake, 's2').iksm['iksm']), data=payload)
 		thejson = json.loads(response.text)
+		print(f"pynso: {thejson}")
 		if 'AUTHENTICATION_ERROR' in str(thejson):
 			iksm = self.auth.doGameKeyRefresh(snowflake)
 			if iksm == None:

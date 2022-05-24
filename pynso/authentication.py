@@ -1,27 +1,37 @@
+import os
+import re
+import uuid
+import base64
+import hashlib
+import random
+import json
+import requests
+import time
+from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-import googleplay
-import stringcrypt
-import apscheduler
+from .googleplay import GooglePlay
+from .stringcrypt import StringCrypt
 
 class nso_authentication():
 	def __init__(self,  *args, **options):
 		self.session = requests.Session()
 		self.pynso_pool = options.get('pynso_pool')
 		self.scheduler = BackgroundScheduler()
-		self.string_crypt = stringcrypt.StringCrypt()
-		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="3", minute='0', second='35', timezone='UTC')
-		self.keyPath = '/home/dbot/db-secret-key.hex'
+		self.string_crypt = StringCrypt()
+		self.ensureEncryptionKey()
+		self.scheduler.add_job(self.updateAppVersion, 'cron', hour="*", minute='*', second='00', timezone='UTC')
+		self.updateAppVersion()
 
-	def ensureEncryptionKey():
-		if os.path.isfile(self.keyPath):
+	def ensureEncryptionKey(self):
+		if os.path.isfile('/home/dbot/db-secret-key.hex'):
 			print("pynso: Found secret key file...")
-			stringCrypt.readSecretKeyFile(self.keyPath)
+			self.string_crypt.readSecretKeyFile('/home/dbot/db-secret-key.hex')
 		else:
 			print("pynso: Creating new secret key file...")
-			stringCrypt.writeSecretKeyFile(self.keyPath)
+			self.string_crypt.writeSecretKeyFile('/home/dbot/db-secret-key.hex')
 
 	def getAppVersion(self):
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 
 		cur.execute("SELECT version, UNIX_TIMESTAMP(updatetime) AS updatetime FROM nso_app_version")
 		row = cur.fetchone()
@@ -40,13 +50,13 @@ class nso_authentication():
 				print("Skipping NSO version check -- cached data is recent")
 				return
 
-		gp = googleplay.GooglePlay()
+		gp = GooglePlay()
 		newVersion = gp.getAppVersion("com.nintendo.znca")
 		if newVersion == None:
 			print(f"Couldn't retrieve NSO app version?")
 			return
 
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 
 		if (oldInfo == None) or (oldInfo['version'] != newVersion):
 			# Version was updated
@@ -57,26 +67,25 @@ class nso_authentication():
 			# No version change, so just bump the timestamp
 			cur.execute("UPDATE nso_app_version SET updatetime = NOW()")
 
-		cur.commit()
-		cur.close()
+		self.pynso_pool.commit(cur)
 
 	def getGameKeys(self, snowflake):
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 		cur.execute("SELECT game_keys FROM tokens WHERE (snowflake = %s) LIMIT 1", (str(snowflake),))
 		row = cur.fetchone()
-		cur.close(cur)
+		self.pynso_pool.commit(cur)
 
 		if (row == None) or (row[0] == None):
 			return {}  # No keys
 
 		ciphertext = row[0]
-		plaintext = self.stringCrypt.decryptString(ciphertext)
+		plaintext = self.string_crypt.decryptString(ciphertext)
 		#print(f"getGameKeys: {ciphertext} -> {plaintext}")
 		keys = json.loads(plaintext)
 		return keys
 
 	# Retrieves a single game key with a dotted path (e.g. "s2.iksm")
-	def getGameKey(self, showflake, path):
+	def getGameKey(self, snowflake, path):
 		hash = self.getGameKeys(snowflake)
 		parts = path.split('.')
 		for k in parts:
@@ -87,13 +96,12 @@ class nso_authentication():
 
 	def __setGameKeys(self, snowflake, keys):
 		plaintext = json.dumps(keys)
-		ciphertext = self.stringCrypt.encryptString(plaintext)
+		ciphertext = self.string_crypt.encryptString(plaintext)
 		#print(f"setGameKeys: {plaintext} -> {ciphertext}")
 
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 		cur.execute("UPDATE tokens SET game_keys = %s, game_keys_time = NOW() WHERE (snowflake = %s)", (ciphertext, snowflake))
-		cur.commit()
-		cur.close()
+		self.pynso_pool.commit(cur)
 
 	# Stores the given data at the dotted path.
 	def __setGameKey(self, snowflake, path, data):
@@ -117,23 +125,22 @@ class nso_authentication():
 			return False
 
 	def checkSessionPresent(self, snowflake):
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 		ret = self.__checkDuplicate(snowflake, cur)
-		cur.close(cur)
+		self.pynso_pool.commit(cur)
 		return ret
 
 	def deleteTokens(self, snowflake):
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 		print("Deleting token")
 		stmt = "DELETE FROM tokens WHERE snowflake = %s"
 		input = (snowflake,)
 		cur.execute(stmt, input)
 		if cur.lastrowid != None:
-			cur.commit(cur)
-			cur.close()
+			self.pynso_pool.commit(cur)
 			return True
 		else:
-			cur.rollback()
+			self.pynso_pool.rollback(cur)
 			cur.close()
 			return False
 
@@ -170,58 +177,54 @@ class nso_authentication():
 		return {'auth_code_verifier' : auth_code_verifier, 'url' : post_login}
 		
 	def postLogin(self, snowflake, returnedUrl, auth_code_verifier) -> bool:
-		cur = self.pynso_pool.cursor()
+		cur = self.pynso_pool.connect()
 		session_token_code = re.search('session_token_code=(.*)&', returnedUrl)
 		if session_token_code == None:
-			cur.close()
+			self.pynso_pool.commit(cur)
 			print(f"pynso: authentication: Issue with account url: {str(accounturl)}")
 			return False
 		session_token_code = self.__get_session_token(session_token_code.group(0)[19:-1], auth_code_verifier)
 		if session_token_code == None:
 			print("pynso: authentication: no session token code")
-			cur.close()
+			self.pynso_pool.commit(cur)
 			return False
 		else:			
-			ciphertext = self.stringCrypt.encryptString(session_token_code)
+			ciphertext = self.string_crypt.encryptString(session_token_code)
 			cur.execute("INSERT INTO tokens (snowflake, session_time, session_token) VALUES(%s, NOW(), %s)", (snowflake, ciphertext, ))
 			if cur.lastrowid != None:
-				cur.commit()
-				cur.close()
+				self.pynso_pool.commit(cur)
 				if self.doGameKeyRefresh(snowflake, 'nso'):
 					return True
 				else:
 					return False
 			else:
-				cur.rollback()
-				cur.close()
+				self.pynso_pool.rollback(cur)
 				return False
 
 	#This method will always return the root key path for a game
-	def doGameKeyRefresh(self, snowflake, game='s2') -> Optional[dict]:
+	def doGameKeyRefresh(self, snowflake, game='s2'):
 		session_token = self.__get_session_token_mysql(snowflake)
 		keys = self.__setup_nso(session_token, game)
 
 		if keys == 500:
-			if isinstance(snowflake, discord.ApplicationContext):
-				print("Temporary issue with NSO logins. Please try again in a minute.")
+			print("Temporary issue with NSO logins. Please try again in a minute.")
 			return None
 		if keys == None:
-			if isinstance(snowflake, discord.ApplicationContext):
-				print("Error getting token, I have logged this for my owners")
+			print("Error getting token, I have logged this for my owners")
 			return None
 
 		self.__setGameKey(snowflake, game, keys)
 		return keys
 
-	def __get_session_token_mysql(self, snowflake) -> Optional[str]:
-		cur = self.pynso_pool.cursor()
+	def __get_session_token_mysql(self, snowflake):
+		cur = self.pynso_pool.connect()
 		cur.execute("SELECT session_token FROM tokens WHERE snowflake = %s", (str(snowflake),))
 		ciphertext = cur.fetchone()
 		cur.close()
 		if ciphertext == None:
 			return None
 		else:
-			return self.stringCrypt.decryptString(ciphertext[0])
+			return self.string_crypt.decryptString(ciphertext[0])
 			
 	def __get_session_token(self, session_token_code, auth_code_verifier):
 		nsoAppInfo = self.getAppVersion()
