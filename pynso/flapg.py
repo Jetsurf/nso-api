@@ -3,8 +3,8 @@ import json
 import requests
 
 class Flapg:
-	def __init__(self):
-		self.user_agent = 'Test proof of concept/0.1 (awendt@putergeek.com)'
+	def __init__(self, user_agent):
+		self.user_agent = user_agent
 		self.session = requests.Session()
 
 	def create_hash_request(self, id_token, timestamp):

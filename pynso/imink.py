@@ -3,15 +3,14 @@ import json
 import requests
 
 class IMink:
-	def __init__(self):
-		self.user_agent = 'Test proof of concept/0.1 (awendt@putergeek.com)'
+	def __init__(self, user_agent):
+		self.user_agent = user_agent
 		self.session = requests.Session()
 
 	def create_f_request(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
-			#TODO: Make this user agent send bot owner, not my hardcoded id
-			'User-Agent' : 'Jet-bot/1.0.0 (discord=jetsurf#8514)'
+			'User-Agent' : user_agent
 		}
 		api_app_body = {
 			'hash_method':  str(method),
