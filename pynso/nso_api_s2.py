@@ -75,7 +75,7 @@ class NSO_API_S2:
 		self.nso_api.notify_keys_update()
 		return True
 
-	def get_player_json(self, url):
+	def get_player_json(self, url, referer = None):
 		if not self.ensure_web_service_token():
 			self.nso_api.errors.append("Could not get S2 web_service_token")
 			return None
@@ -90,7 +90,7 @@ class NSO_API_S2:
 		headers['x-timezone-offset'] = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36'
 		headers['Accept'] = '*/*'
-		headers['Referer'] = 'https://app.splatoon2.nintendo.net/home'
+		headers['Referer'] = referer or 'https://app.splatoon2.nintendo.net/home'
 		headers['Accept-Encoding'] = 'gzip, deflate'
 		headers['Accept-Language'] = 'en-us'
 
