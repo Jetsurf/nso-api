@@ -19,7 +19,7 @@ class NSO_API:
 		self.callbacks = {}
 		self.context = context
 		self.login = None
-		self.session_token = session_token
+		self.session_token = None
 		self.api_tokens = None
 		self.user_info = None
 		self.last_activity_time = time.time()
