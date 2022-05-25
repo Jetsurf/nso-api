@@ -11,19 +11,10 @@ from .nso_expiring_token import NSO_Expiring_Token
 from .nso_api_s2 import NSO_API_S2
 
 class NSO_API:
-	def __init__(self, app_version, f_provider, context = None, session_token = None):
+	def __init__(self, app_version, f_provider, context = None):
 		self.session = requests.Session()
 		self.app_version = app_version
-		
-		if f_provider == 'flapg':
-			from .flapg import Flapg
-			self.f_provider = Flapg()
-		elif f_provider == 'imink':
-			from .imink import IMink
-			self.f_provider = IMink()
-		else:
-			raise NotImplementedError(f"F-Provider {f_provider} not implemented")
-
+		self.f_provider = f_provider
 		self.client_id = '71b963c1b7b6d119'
 		self.callbacks = {}
 		self.context = context
@@ -42,6 +33,9 @@ class NSO_API:
         #  the process of getting us a session_token.
 	def is_logged_in(self):
 		return self.session_token != None
+
+	def set_session_token(self, session_token):
+		self.session_token = session_token
 
 	def on_keys_update(self, callback):
 		self.callbacks['keys_update'] = callback
