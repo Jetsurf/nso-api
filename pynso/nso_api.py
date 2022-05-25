@@ -31,7 +31,6 @@ class NSO_API:
 		self.session_token = session_token
 		self.api_tokens = None
 		self.user_info = None
-		self_web_service_token = None
 		self.s2 = NSO_API_S2(self)
 		self.errors = []
 
