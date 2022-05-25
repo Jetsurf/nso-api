@@ -10,7 +10,7 @@ class IMink:
 	def create_f_request(self, id_token, guid, timestamp, method):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
-			'User-Agent' : user_agent
+			'User-Agent' : self.user_agent
 		}
 		api_app_body = {
 			'hash_method':  str(method),
