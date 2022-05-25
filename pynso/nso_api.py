@@ -31,8 +31,12 @@ class NSO_API:
 		self.session_token = session_token
 		self.api_tokens = None
 		self.user_info = None
+		self.last_activity_time = time.time()
 		self.s2 = NSO_API_S2(self)
 		self.errors = []
+
+	def get_idle_seconds(self):
+		return time.time() - self.last_activity_time
 
 	# Returns true if "logged in". This just means the user has completed
         #  the process of getting us a session_token.
@@ -222,6 +226,7 @@ class NSO_API:
 	# Sends the given request and expects a 200 response.
 	# Returns a requests.Response object.
 	def do_http_request(self, req):
+		self.last_activity_time = time.time()
 		res = self.session.send(self.session.prepare_request(req))
 		#self.dump_http_message(res.request)
 		#self.dump_http_message(res)
