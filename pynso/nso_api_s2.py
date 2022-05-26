@@ -24,7 +24,7 @@ class NSO_API_S2:
 			return
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.iksm_session_token = NSO_Expiring_Token.from_hash(keys['iksm_session_token']) if keys.get('iksm_session_token') else None
-		self.xid = keys.get['x-unique-id'] if keys.get('x-unique-id') else None
+		self.xid = keys.get('x-unique-id') if keys.get('x-unique-id') else None
 
 	def create_iksm_session_token_request(self):
 		if not self.web_service_token:
@@ -127,7 +127,7 @@ class NSO_API_S2:
 		headers['Referer'] = f"https://app.splatoon2.nintendo.net/home/shop/{merchid}"
 		headers['Accept-Encoding'] = 'gzip, deflate, br'
 		headers['Accept-Language'] = 'en-us'
-
+		
 		if confirmation:
 			payload = { "override" : 1 }
 		else:
@@ -174,4 +174,49 @@ class NSO_API_S2:
 		if cbrank == "S+":
 			cbrank += str(records['records']['player']['udemae_clam']['s_plus_number'])
 
-		return {"SZ": szrank, "RM": rmrank, "TC": tcrank, "CB": cbrank}
+		return { "SZ": szrank, "RM": rmrank, "TC": tcrank, "CB": cbrank, 'name': name }
+
+	def get_map_stats(self, mapid):
+		data = self.do_records_request()
+		allmapdata = data['records']['stage_stats']
+		themapdata = None
+		for i in allmapdata:
+			if int(i) == mapid:
+				themapdata = allmapdata[i]
+				break
+		
+		playername = data['records']['player']['nickname']
+		mapname = themapdata['stage']['name']
+		rmwin = themapdata['hoko_win']
+		rmloss = themapdata['hoko_lose']
+		szwin = themapdata['area_win']
+		szloss = themapdata['area_lose']
+		tcwin = themapdata['yagura_win']
+		tcloss = themapdata['yagura_lose']
+		cbwin = themapdata['asari_win']
+		cbloss = themapdata['asari_lose']
+		image = themapdata['stage']['image']
+
+		if (rmwin + rmloss) != 0:
+			rmpercent = int(rmwin / (rmwin + rmloss) * 100)
+		else:
+			rmpercent = 0
+		if (szwin + szloss) != 0:
+			szpercent = int(szwin / (szwin + szloss) * 100)
+		else:
+			szpercent = 0
+		if (tcwin + tcloss) != 0:
+			tcpercent = int(tcwin / (tcwin + tcloss) * 100)
+		else:
+			tcpercent = 0
+		if (cbwin + cbloss) != 0:
+			cbpercent = int(cbwin / (cbwin + cbloss) * 100)
+		else:
+			cbpercent = 0
+
+		rmdict = { 'wins' : rmwin, 'losses' : rmloss, 'percent' : rmpercent }
+		szdict = { 'wins' : szwin, 'losses' : szloss, 'percent' : szpercent }
+		tcdict = { 'wins' : tcwin, 'losses' : tcloss, 'percent' : tcpercent }
+		cbdict = { 'wins' : cbwin, 'losses' : cbloss, 'percent' : cbpercent }
+
+		return { 'SZ' : szdict, "TC" : tcdict, "RM" : rmdict, "CB" : cbdict, 'mapname' : mapname, 'playername' : playername, 'image' : image }
