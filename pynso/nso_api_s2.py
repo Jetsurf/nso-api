@@ -1,5 +1,6 @@
 import time
 import requests
+import re
 
 from .nso_expiring_token import NSO_Expiring_Token
 
@@ -9,11 +10,13 @@ class NSO_API_S2:
 		self.game_id = 5741031244955648  # Splatoon 2
 		self.web_service_token = None
 		self.iksm_session_token = None
+		self.xid = None
 
 	def get_keys(self):
 		keys = {}
 		keys['web_service_token'] = self.web_service_token.to_hash() if self.web_service_token else None
 		keys['iksm_session_token'] = self.iksm_session_token.to_hash() if self.iksm_session_token else None
+		keys['x-unique-id'] = self.xid
 		return keys
 
 	def set_keys(self, keys):
@@ -21,6 +24,7 @@ class NSO_API_S2:
 			return
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.iksm_session_token = NSO_Expiring_Token.from_hash(keys['iksm_session_token']) if keys.get('iksm_session_token') else None
+		self.xid = keys.get['x-unique-id'] if keys.get('x-unique-id') else None
 
 	def create_iksm_session_token_request(self):
 		if not self.web_service_token:
@@ -53,7 +57,6 @@ class NSO_API_S2:
 		return True
 
 	# Gets the iksm_session_token. This is actually an HTTP cookie.
-	# TODO: We could also grab the user's x-unique-id value here.
 	def ensure_iksm_session_token(self):
 		if self.iksm_session_token and self.iksm_session_token.is_fresh():
 			return True
@@ -71,6 +74,13 @@ class NSO_API_S2:
 			self.nso_api.errors.append("Expected iksm_session cookie but didn't get one")
 			return False
 
+		data = re.search("data-unique-id=\"([0-9]*?)\"", response.text)
+		xid = data.group(0)
+		if not xid:
+			self.nso_api.errors.append("Expected data-unique-id, got none")
+			return False
+
+		self.xid = xid
 		self.iksm_session_token = iksm_session_token
 		self.nso_api.notify_keys_update()
 		return True
@@ -87,6 +97,7 @@ class NSO_API_S2:
 		headers = {}
 		headers['Host'] = 'app.splatoon2.nintendo.net'
 		headers['x-requested-with'] = 'XMLHttpRequest'
+		headers['x-unique-id'] = self.xid
 		headers['x-timezone-offset'] = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
 		headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36'
 		headers['Accept'] = '*/*'
@@ -97,13 +108,50 @@ class NSO_API_S2:
 		req = requests.Request('GET', url, headers = headers, cookies = dict(iksm_session = self.iksm_session_token.value))
 		return self.nso_api.do_json_request(req)
 
+	def post_store_json(self, merchid, confirmation):
+		if not self.ensure_web_service_token():
+			self.nso_api.errors.append("Could not get S2 web_service_token")
+			return None
+
+		if not self.ensure_iksm_session_token():
+			self.nso_api.errors.append("Could not get S2 iksm_session_token")
+			return None
+
+		headers = {}
+		headers['Origin'] = 'https://app.splatoon2.nintendo.net'
+		headers['x-requested-with'] = 'XMLHttpRequest'
+		headers['x-unique-id'] = self.xid
+		headers['x-timezone-offset'] = str(int((time.mktime(time.gmtime()) - time.mktime(time.localtime()))/60))
+		headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 7.1.2; Pixel Build/NJH47D; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/59.0.3071.125 Mobile Safari/537.36'
+		headers['Accept'] = '*/*'
+		headers['Referer'] = f"https://app.splatoon2.nintendo.net/home/shop/{merchid}"
+		headers['Accept-Encoding'] = 'gzip, deflate, br'
+		headers['Accept-Language'] = 'en-us'
+
+		if confirmation:
+			payload = { "override" : 1 }
+		else:
+			payload = { "override" : 0 }
+
+		f"https://app.splatoon2.nintendo.net/api/onlineshop/merchandises/{merchid}"
+		req = requests.Request('POST', url, headers = headers, cookies = dict(iksm_session = self.iksm_session_token.value), data=payload)
+		return self.nso_api.do_json_request(req)
+
 	def do_records_request(self):
 		return self.get_player_json("https://app.splatoon2.nintendo.net/api/records")
 
+	def get_all_battles(self):
+		return self.get_player_json("https://app.splatoon2.nintendo.net/api/results")	
 
 	def get_full_battle(self, battleid):
+		return self.get_player_json(f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
 
-		self.get_nso_json()	
+	def get_sr_records(self):
+		return self.get_player_json("https://app.splatoon2.nintendo.net/api/coop_results", "https://app.splatoon2.nintendo.net/coop")
+
+	def post_store_purchase(self, merchid, confirmation=False):
+		return self.post_store_json(merchid, confirmation)
+
 	def get_ranks(self):
 		records = self.do_records_request()
 		if not records:
