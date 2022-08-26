@@ -334,18 +334,18 @@ class NSO_API:
 			self.errors.append("Could not get user_info")
 			return None
 
-		timestamp = int(time.time() * 1000) - 1000 #Temp Fix!
+		#timestamp = int(time.time() * 1000) - 1000 #Temp Fix!
 		guid = str(uuid.uuid4())
 
-		nso_f = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid, timestamp)
-		print(f"NSO f: {nso_f}")
+		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid)
+		print(f"NSO_f dict: {nso_f_dict}")
 
 		# TODO: Save the api_login and skip it when fresh? Could be a
                 #  win if we're gathering tokens for multiple games.
 		# This is trickier than it sounds because the timestamp and
 		#  guid would have to match between this and getting the
 		#  web_service_token below. May not be worth it.
-		api_login = self.do_json_request(self.create_api_login_request(nso_f, timestamp, guid))
+		api_login = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], nso_f_dict['request_id']))
 		if not api_login:
 			return None
 		elif api_login.get("status") != 0:
@@ -355,10 +355,10 @@ class NSO_API:
 		# Cache the user's friend code
 		self.cache['friend_code'] = api_login['result']['user']['links']['friendCode']['id']
 
-		app_f = self.f_provider.get_app_f(api_login['result']['webApiServerCredential']['accessToken'], guid, timestamp)
-		print(f"App f: {app_f}")
+		app_f_dict = self.f_provider.get_app_f(api_login['result']['webApiServerCredential']['accessToken'], guid)
+		print(f"App f: {app_f_dict}")
 
-		web_service_token = self.do_json_request(self.create_web_service_token_request(api_login, game_id, app_f, api_login['result']['webApiServerCredential']['accessToken'], timestamp, guid))
+		web_service_token = self.do_json_request(self.create_web_service_token_request(api_login, game_id, app_f_dict['f'], api_login['result']['webApiServerCredential']['accessToken'], app_f_dict['timestamp'], guid))
 		if not web_service_token:
 			return None
 		elif web_service_token.get("status") != 0:
