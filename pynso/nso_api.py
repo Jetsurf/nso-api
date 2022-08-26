@@ -334,11 +334,9 @@ class NSO_API:
 			self.errors.append("Could not get user_info")
 			return None
 
-		#timestamp = int(time.time() * 1000) - 1000 #Temp Fix!
 		guid = str(uuid.uuid4())
 
 		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid)
-		print(f"NSO_f dict: {nso_f_dict}")
 
 		# TODO: Save the api_login and skip it when fresh? Could be a
                 #  win if we're gathering tokens for multiple games.
@@ -356,7 +354,6 @@ class NSO_API:
 		self.cache['friend_code'] = api_login['result']['user']['links']['friendCode']['id']
 
 		app_f_dict = self.f_provider.get_app_f(api_login['result']['webApiServerCredential']['accessToken'], guid)
-		print(f"App f: {app_f_dict}")
 
 		web_service_token = self.do_json_request(self.create_web_service_token_request(api_login, game_id, app_f_dict['f'], api_login['result']['webApiServerCredential']['accessToken'], app_f_dict['timestamp'], guid))
 		if not web_service_token:
