@@ -1,13 +1,16 @@
 # pynso
 Aims to be an *updated* library to support communicating with Nintendo's Switch Online Service.
-This is first and formost a supporting project for [Splatnet/Music Bot](https://github.com/Jetsurf/jet-bot).
-Features will be written in need of importance for that project
+
+## Example:
+See example.py for a quick example of how to setup a session token, request game service tokens, and retrieve basic data from Nintendo.
+This will be likely be updated
 
 ## TODO
 - [X] Splatoon 2 API Endpoints
+  - Note: Splatfest endpoints are not present. Likely not to be implemented soon due to SplatFests for S2 being done
 - [X] Animal Crossing New Horizons API Passport Endpoints
 - [X] Login support through iMink
-- [X] ACNH "Extras" (ingame/chat support? etc)
-  - Emotes/Messages are working
+- [X] ACNH "Extras" (ingame/chat support
+- [ ] Splatoon 3 - Support is planned
 
 Under construction, keep checking if interested!
