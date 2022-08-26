@@ -3,7 +3,13 @@ Aims to be an *updated* library to support communicating with Nintendo's Switch 
 
 ## Example:
 See example.py for a quick example of how to setup a session token, request game service tokens, and retrieve basic data from Nintendo.
-This will be likely be updated
+
+## Installation
+Easiest way to install this is to use git to clone a copy
+`git@github.com:Jetsurf/pynso.git`
+
+Then install with pip3
+`pip3 install .` (In cloned directory)
 
 ## TODO
 - [X] Splatoon 2 API Endpoints
