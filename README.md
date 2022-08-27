@@ -22,3 +22,6 @@ The install with pip3
 - [ ] Splatoon 3 - Support is planned
 
 Under construction, keep checking if interested!
+
+## Credit
+[S2S](https://github.com/frozenpandaman/splatnet2statink) - Foundation of iksm 
