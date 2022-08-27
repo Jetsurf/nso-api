@@ -27,6 +27,7 @@ class NSO_API:
 		self.cache = {}
 		self.s2 = NSO_API_S2(self)
 		self.acnh = NSO_API_ACNH(self)
+		self.debug = int(os.environ.get('PYNSO_DEBUG', 0))
 		self.errors = []
 
 	def get_idle_seconds(self):
@@ -230,8 +231,8 @@ class NSO_API:
 
 		self.last_activity_time = time.time()
 		res = self.session.send(self.session.prepare_request(req))
-		#self.dump_http_message(res.request)
-		#self.dump_http_message(res)
+		(self.debug >= 2) and self.dump_http_message(res.request)
+		(self.debug >= 2) and self.dump_http_message(res)
 		if not res.status_code in expect_status:
 			self.errors.append(f'Unexpected HTTP code {res.status_code} from request, wanted {expect_status}')
 			return None
