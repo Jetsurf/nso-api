@@ -13,6 +13,11 @@ The install with pip3
 
 `pip3 install .` (from cloned directory)
 
+## Credit
+[S2S](https://github.com/frozenpandaman/splatnet2statink) - [eli!](https://twitter.com/frozenpandaman) Foundation of iksm
+
+[iMink](https://github.com/JoneWang/imink) - [Jone Wang](https://twitter.com/JoneWang) - Built-in F-Token provider
+
 ## TODO
 - [X] Splatoon 2 API Endpoints
   - Note: Splatfest endpoints are not present. Likely not to be implemented soon due to SplatFests for S2 being done
@@ -22,7 +27,3 @@ The install with pip3
 - [ ] Splatoon 3 - Support is planned
 
 Under construction, keep checking if interested!
-
-## Credit
-[S2S](https://github.com/frozenpandaman/splatnet2statink) - Foundation of iksm 
-[iMink](https://github.com/JoneWang/imink) - Built-in F-Token provider
