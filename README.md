@@ -25,3 +25,4 @@ Under construction, keep checking if interested!
 
 ## Credit
 [S2S](https://github.com/frozenpandaman/splatnet2statink) - Foundation of iksm 
+[iMink](https://github.com/JoneWang/imink) - Built-in F-Token provider
