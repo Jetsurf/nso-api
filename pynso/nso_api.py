@@ -22,6 +22,7 @@ class NSO_API:
 		self.login = None
 		self.session_token = None
 		self.api_tokens = None
+		self.api_login = None
 		self.user_info = None
 		self.last_activity_time = time.time()
 		self.cache = {}
@@ -53,6 +54,7 @@ class NSO_API:
 		keys = {}
 		keys['session_token'] = self.session_token
 		keys['api_tokens'] = self.api_tokens.to_hash() if self.api_tokens else None
+		keys['api_login'] = self.api_login.to_hash() if self.api_login else None
 		keys['games'] = {}
 		keys['games']['s2'] = self.s2.get_keys()
 		keys['games']['acnh'] = self.acnh.get_keys()
@@ -61,6 +63,7 @@ class NSO_API:
 	def set_keys(self, keys):
 		self.session_token = keys.get('session_token')
 		self.api_tokens = NSO_Expiring_Token.from_hash(keys['api_tokens']) if keys.get('api_tokens') else None
+		self.api_login = NSO_Expiring_Token.from_hash(keys['api_login']) if keys.get('api_login') else None
 		if keys.get('games'):
 			self.s2.set_keys(keys['games'].get('s2'))
 			self.acnh.set_keys(keys['games'].get('acnh'))
@@ -194,7 +197,7 @@ class NSO_API:
 		req = requests.Request('POST', 'https://api-lp1.znc.srv.nintendo.net/v3/Account/Login', headers=headers, json=jsonbody)
 		return req
 
-	def create_web_service_token_request(self, api_login, game_id, app_f, api_login_access_token, timestamp, guid):
+	def create_web_service_token_request(self, game_id, app_f, timestamp, guid):
 		headers = {}
 		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
 		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
@@ -202,7 +205,7 @@ class NSO_API:
 		headers['X-ProductVersion'] = self.app_version
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Connection'] = 'Keep-Alive'
-		headers['Authorization'] = f'Bearer {api_login["result"]["webApiServerCredential"]["accessToken"]}'
+		headers['Authorization'] = f'Bearer {self.api_login.value}'
 		headers['X-Platform'] = 'Android'
 		headers['Accept-Encoding'] = 'gzip'
 
@@ -210,7 +213,7 @@ class NSO_API:
 		jsonbody['parameter'] = {}
 		jsonbody['parameter']['f'] = app_f
 		jsonbody['parameter']['id'] = game_id
-		jsonbody['parameter']['registrationToken'] = api_login_access_token
+		jsonbody['parameter']['registrationToken'] = self.api_login.value
 		jsonbody['parameter']['timestamp'] = timestamp
 		jsonbody['parameter']['requestId'] = guid
 
@@ -312,6 +315,7 @@ class NSO_API:
 
 		result = self.do_json_request(self.create_api_tokens_request())
 		if not result:
+			self.errors.append("Request for api_tokens failed")
 			return False
 
 		self.api_tokens = NSO_Expiring_Token(result, duration = result['expires_in'])
@@ -324,58 +328,74 @@ class NSO_API:
 		if self.user_info:
 			return True
 
+		if not self.ensure_api_tokens():
+			return False
+
 		result = self.do_json_request(self.create_user_info_request())
 		if not result:
+			self.errors.append("Request for user_info failed")
 			return False
 
 		self.user_info = result
 		return True
 
-	# Gets the web_service_token for a specific game id.
-        # Returns an NSO_Expiring_Token object on success.
-	def get_web_service_token(self, game_id):
+	def ensure_api_login(self):
+		if self.api_login and self.api_login.is_fresh():
+			return True
+
+		if not self.ensure_user_info():
+			return False
+
 		if not self.is_logged_in():
 			self.errors.append("Not logged in")
-			return None
+			return False
 
 		if not self.ensure_api_tokens():
 			self.errors.append("Could not get api_tokens")
-			return None
+			return False
 
-		if not self.ensure_user_info():
-			self.errors.append("Could not get user_info")
+		guid = str(uuid.uuid4())
+		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid)
+		if not nso_f_dict:
+			self.errors.append("Could not get nso f hash from f_provider")
+			return False
+
+		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], nso_f_dict['request_id']))
+		if not api_login_response:
+			self.errors.append("API login request failed")
+			return False
+		elif api_login_response.get("status") != 0:
+			self.errors.append("Unexpected response getting api login")
+			return False
+
+		# Cache the user's friend code
+		self.cache['friend_code'] = api_login_response['result']['user']['links']['friendCode']['id']
+
+		wasc = api_login_response['result']['webApiServerCredential']
+		self.api_login = NSO_Expiring_Token(wasc['accessToken'], duration = wasc['expiresIn'])
+		return True
+
+	# Gets the web_service_token for a specific game id.
+        # Returns an NSO_Expiring_Token object on success.
+	def get_web_service_token(self, game_id):
+		if not self.ensure_api_login():
 			return None
 
 		guid = str(uuid.uuid4())
+		app_f_dict = self.f_provider.get_app_f(self.api_login.value, guid)
+		if not app_f_dict:
+			self.errors.append("Could not get app f hash from f_provider")
+			return False
 
-		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid)
-
-		# TODO: Save the api_login and skip it when fresh? Could be a
-                #  win if we're gathering tokens for multiple games.
-		# This is trickier than it sounds because the timestamp and
-		#  guid would have to match between this and getting the
-		#  web_service_token below. May not be worth it.
-		api_login = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], nso_f_dict['request_id']))
-		if not api_login:
+		web_service_token_response = self.do_json_request(self.create_web_service_token_request(game_id, app_f_dict['f'], app_f_dict['timestamp'], guid))
+		if not web_service_token_response:
 			return None
-		elif api_login.get("status") != 0:
-			self.errors.append("Unexpected response getting api login")
-			return None
-
-		# Cache the user's friend code
-		self.cache['friend_code'] = api_login['result']['user']['links']['friendCode']['id']
-
-		app_f_dict = self.f_provider.get_app_f(api_login['result']['webApiServerCredential']['accessToken'], guid)
-
-		web_service_token = self.do_json_request(self.create_web_service_token_request(api_login, game_id, app_f_dict['f'], api_login['result']['webApiServerCredential']['accessToken'], app_f_dict['timestamp'], guid))
-		if not web_service_token:
-			return None
-		elif web_service_token.get("status") != 0:
+		elif web_service_token_response.get("status") != 0:
 			self.errors.append("Unexpected response getting web service token")
 			return None
 
-		#print(web_service_token)
-		return NSO_Expiring_Token(web_service_token['result']['accessToken'], duration = web_service_token['result']['expiresIn'])
+		#print(web_service_token_response)
+		return NSO_Expiring_Token(web_service_token_response['result']['accessToken'], duration = web_service_token_response['result']['expiresIn'])
 
 	# Returns friend code if known.
 	def get_friend_code(self):
