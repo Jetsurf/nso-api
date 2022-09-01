@@ -24,7 +24,7 @@ class NSO_API_ACNH:
 		return keys
 
 	def set_keys(self, keys):
-		if not keys:
+		if keys is None:
 			return
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.g_token = NSO_Expiring_Token.from_hash(keys['g_token']) if keys.get('g_token') else None
