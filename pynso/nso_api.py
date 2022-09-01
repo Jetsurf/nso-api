@@ -45,10 +45,18 @@ class NSO_API:
 	def on_keys_update(self, callback):
 		self.callbacks['keys_update'] = callback
 
+	def on_logged_out(self, callback):
+		self.callbacks['logged_out'] = callback
+
 	def notify_keys_update(self):
 		if not self.callbacks.get('keys_update'):
 			return
 		self.callbacks['keys_update'](self, self.context)
+
+	def notify_logged_out(self):
+		if not self.callbacks.get('logged_out'):
+			return
+		self.callbacks['logged_out'](self, self.context)
 
 	def get_keys(self):
 		keys = {}
@@ -75,7 +83,6 @@ class NSO_API:
 		self.api_login = None
 		self.s2.set_keys({})
 		self.acnh.set_keys({})
-		print(f"expire_keys: keys are now {repr(self.get_keys())}")
 		self.notify_keys_update()
 		return
 
@@ -316,10 +323,28 @@ class NSO_API:
 		if self.api_tokens and self.api_tokens.is_fresh():
 			return True
 
-		result = self.do_json_request(self.create_api_tokens_request())
-		if not result:
+		response = self.do_http_request(self.create_api_tokens_request(), expect_status = [200, 400])
+		if response is None:
 			self.errors.append("Request for api_tokens failed")
 			return False
+		if response.status_code != 200:
+			result = None
+			try:
+				result = json.loads(response.text)
+			except:
+				pass
+
+			if result and result.get('error') and (result.get('error') == 'invalid_grant'):
+				self.errors.append(f"Client is logged out")
+				self.notify_logged_out()
+				self.session_token = None
+				self.notify_keys_update()
+				return False
+
+			self.errors.append(f"Request for api_tokens gave status code {response.status_code}")
+			return False
+
+		result = json.loads(response.text)
 
 		self.api_tokens = NSO_Expiring_Token(result, duration = result['expires_in'])
 		self.notify_keys_update()
