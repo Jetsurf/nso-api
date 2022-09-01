@@ -65,6 +65,17 @@ class NSO_API:
 			self.s2.set_keys(keys['games'].get('s2'))
 			self.acnh.set_keys(keys['games'].get('acnh'))
 
+	# Discards all keys except for the session_token. This should not be
+	#  needed during normal use, but can be useful for testing.
+	def expire_keys(self):
+		self.api_tokens = None
+		self.api_login = None
+		self.s2.set_keys({})
+		self.acnh.set_keys({})
+		print(f"expire_keys: keys are now {repr(self.get_keys())}")
+		self.notify_keys_update()
+		return
+
 	def get_error_message(self):
 		if len(self.errors) == 0:
 			return 'No error'

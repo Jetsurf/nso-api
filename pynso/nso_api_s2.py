@@ -20,7 +20,7 @@ class NSO_API_S2:
 		return keys
 
 	def set_keys(self, keys):
-		if not keys:
+		if keys is None:
 			return
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.iksm_session_token = NSO_Expiring_Token.from_hash(keys['iksm_session_token']) if keys.get('iksm_session_token') else None
