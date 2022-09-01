@@ -198,6 +198,9 @@ class NSO_API:
 		return req
 
 	def create_web_service_token_request(self, game_id, app_f, timestamp, guid):
+		if not self.api_login:
+			raise Exception("No api_login")
+
 		headers = {}
 		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
 		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
