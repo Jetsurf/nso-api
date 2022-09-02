@@ -6,11 +6,56 @@ import os
 import hashlib
 import uuid
 import time
+import inspect
+import re
 
 from .nso_expiring_token import NSO_Expiring_Token
 from .nso_api_s2 import NSO_API_S2
 from .nso_api_acnh import NSO_API_ACNH
 from .nso_api_account import NSO_API_Account
+
+class NSO_JSON_Response:
+	def __init__(self, response):
+		self.response = response  # requests.Response object
+		self.payload  = None      # Decoded payload
+		self.decode()
+
+	def decode(self):
+		if self.response is None:
+			return
+
+		mime_type = self.response.headers['content-type']
+		if (not mime_type) or (not re.match("^application/json\\b", mime_type)):
+			return
+
+		self.payload = json.loads(self.response.text)
+
+	def is_http_error(self):
+		return not ((self.response.status_code >= 200) and (self.response.status_code <= 299))
+
+	def is_json_error(self):
+		if self.payload is None:
+			return False
+
+		return self.payload.get('status') != 0
+
+	def get_error(self):
+		if self.response is None:
+			return "No HTTP response"
+		elif self.is_http_error():
+			return f"HTTP status code {self.response.status_code}"
+		elif self.is_json_error():
+			return f"JSON status code {self.payload.get('status')} ({self.payload.get('errorMessage')})"
+
+		return None
+
+	def result(self):
+		if self.payload is None:
+			return None
+		elif self.payload.get('status') != 0:
+			return None
+
+		return self.payload.get('result')
 
 class NSO_API:
 	def __init__(self, app_version, f_provider, context = None):
@@ -32,6 +77,22 @@ class NSO_API:
 		self.account = NSO_API_Account(self)
 		self.debug = int(os.environ.get('PYNSO_DEBUG', 0))
 		self.errors = []
+
+	# Given an NSO_JSON_Response object, records an error message and
+	#  returns True if it was an error.
+	def record_response_error(self, response):
+		error = None
+		if not response:
+			error = "No response"
+		else:
+			error = response.get_error()
+
+		if not error:
+			return False
+
+		caller = inspect.stack()[1].function
+		self.errors.append(f"{caller}: {error}")
+		return True
 
 	def get_idle_seconds(self):
 		return time.time() - self.last_activity_time
@@ -310,8 +371,9 @@ class NSO_API:
 			return None
 
 		request = self.create_znc_request(path, params)
-		result = self.do_json_request(request)
-		return result
+		#result = self.do_json_request(request)
+		response = self.do_http_request(request)
+		return NSO_JSON_Response(response)
 
 	def get_login_challenge_url(self):
 		login = self.generate_login_challenge()
