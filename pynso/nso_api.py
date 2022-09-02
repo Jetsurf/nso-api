@@ -10,6 +10,7 @@ import time
 from .nso_expiring_token import NSO_Expiring_Token
 from .nso_api_s2 import NSO_API_S2
 from .nso_api_acnh import NSO_API_ACNH
+from .nso_api_account import NSO_API_Account
 
 class NSO_API:
 	def __init__(self, app_version, f_provider, context = None):
@@ -28,6 +29,7 @@ class NSO_API:
 		self.cache = {}
 		self.s2 = NSO_API_S2(self)
 		self.acnh = NSO_API_ACNH(self)
+		self.account = NSO_API_Account(self)
 		self.debug = int(os.environ.get('PYNSO_DEBUG', 0))
 		self.errors = []
 
@@ -230,6 +232,38 @@ class NSO_API:
 		req = requests.Request('POST', 'https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken', headers=headers, json=jsonbody)
 		return req
 
+	def create_znc_request(self, path, params):
+		if path.startswith("http:") or path.startswith("https:"):
+			raise Exception("create_znc_request(): I want a path but I was given a full URL")
+
+		if not path.startswith("/"):
+			path = "/" + path
+
+		url = "https://api-lp1.znc.srv.nintendo.net" + path
+
+		if not self.api_login:
+			raise Exception("No api_login")
+
+		guid = str(uuid.uuid4())
+
+		headers = {}
+		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
+		headers['Accept-Encoding'] = 'gzip'
+		headers['Accept'] = 'application/json'
+		headers['Connection'] = 'Keep-Alive'
+		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
+		headers['X-ProductVersion'] = self.app_version
+		headers['Content-Type'] = 'application/json; charset=utf-8'
+		headers['Authorization'] = f"Bearer {self.api_login.value}"
+		headers['X-Platform'] = 'Android'
+
+		jsonbody = {}
+		jsonbody['parameter'] = params
+		jsonbody['requestId'] = guid
+
+		req = requests.Request('POST', url, headers = headers, json = jsonbody)
+		return req
+
 	# Utility method to print out a requests.Request or request.Response object.
 	def dump_http_message(self, message):
 		print(message)
@@ -269,6 +303,15 @@ class NSO_API:
 		if res == None:
 			return None
 		return json.loads(res.text)
+
+	# Performs an authenticated call to api-lp1.znc.srv.nintendo.net.
+	def do_znc_call(self, path, params):
+		if not self.ensure_api_login():
+			return None
+
+		request = self.create_znc_request(path, params)
+		result = self.do_json_request(request)
+		return result
 
 	def get_login_challenge_url(self):
 		login = self.generate_login_challenge()
