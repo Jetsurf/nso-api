@@ -11,6 +11,7 @@ import re
 
 from .nso_expiring_token import NSO_Expiring_Token
 from .nso_api_s2 import NSO_API_S2
+from .nso_api_s3 import NSO_API_S3
 from .nso_api_acnh import NSO_API_ACNH
 from .nso_api_account import NSO_API_Account
 
@@ -73,6 +74,7 @@ class NSO_API:
 		self.last_activity_time = time.time()
 		self.cache = {}
 		self.s2 = NSO_API_S2(self)
+		self.s3 = NSO_API_S3(self)
 		self.acnh = NSO_API_ACNH(self)
 		self.account = NSO_API_Account(self)
 		self.debug = int(os.environ.get('PYNSO_DEBUG', 0))
@@ -128,6 +130,7 @@ class NSO_API:
 		keys['api_login'] = self.api_login.to_hash() if self.api_login else None
 		keys['games'] = {}
 		keys['games']['s2'] = self.s2.get_keys()
+		keys['games']['s3'] = self.s3.get_keys()
 		keys['games']['acnh'] = self.acnh.get_keys()
 		return keys
 
@@ -137,6 +140,7 @@ class NSO_API:
 		self.api_login = NSO_Expiring_Token.from_hash(keys['api_login']) if keys.get('api_login') else None
 		if keys.get('games'):
 			self.s2.set_keys(keys['games'].get('s2'))
+			self.s3.set_keys(keys['games'].get('s3'))
 			self.acnh.set_keys(keys['games'].get('acnh'))
 
 	# Discards all keys except for the session_token. This should not be
@@ -145,6 +149,7 @@ class NSO_API:
 		self.api_tokens = None
 		self.api_login = None
 		self.s2.set_keys({})
+		self.s3.set_keys({})
 		self.acnh.set_keys({})
 		self.notify_keys_update()
 		return
