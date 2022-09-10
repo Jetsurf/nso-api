@@ -140,3 +140,6 @@ class NSO_API_S3:
 
 	def get_fits(self):
 		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
+
+	def get_maps_stats(self):
+		return self.do_graphql_request('53dffcfb06b273dd7bdf6a303d310730', {})
