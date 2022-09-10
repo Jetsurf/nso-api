@@ -132,3 +132,5 @@ class NSO_API_S3:
 	def get_salmon_run_stats(self):
 		return self.do_graphql_request('817618ce39bcf5570f52a97d73301b30', {})
 
+	def get_current_splatfest(self):
+		return self.do_graphql_request('c0429fd738d829445e994d3370999764', {})
