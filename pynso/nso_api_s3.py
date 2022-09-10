@@ -134,3 +134,6 @@ class NSO_API_S3:
 
 	def get_current_splatfest(self):
 		return self.do_graphql_request('c0429fd738d829445e994d3370999764', {})
+
+	def get_weapon_stats(self):
+		return self.do_graphql_request('a0c277c719b758a926772879d8e53ef8', {})
