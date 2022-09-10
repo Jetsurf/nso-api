@@ -123,3 +123,12 @@ class NSO_API_S3:
 	def get_stage_schedule(self):
 		return self.do_graphql_request('10e1d424391e78d21670227550b3509f', {})
 
+	def get_player_stats(self):
+		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
+
+	def get_single_player_stats(self):
+		return self.do_graphql_request('29957cf5d57b893934de857317cd46d8', {})
+
+	def get_salmon_run_stats(self):
+		return self.do_graphql_request('817618ce39bcf5570f52a97d73301b30', {})
+
