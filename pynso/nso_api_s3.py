@@ -137,3 +137,6 @@ class NSO_API_S3:
 
 	def get_weapon_stats(self):
 		return self.do_graphql_request('a0c277c719b758a926772879d8e53ef8', {})
+
+	def get_fits(self):
+		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
