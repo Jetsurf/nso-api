@@ -123,10 +123,10 @@ class NSO_API_S3:
 	def get_stage_schedule(self):
 		return self.do_graphql_request('10e1d424391e78d21670227550b3509f', {})
 
-	def get_player_stats(self):
+	def get_player_stats_simple(self):
 		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
 
-	def get_single_player_stats(self):
+	def get_player_stats_full(self):
 		return self.do_graphql_request('29957cf5d57b893934de857317cd46d8', {})
 
 	def get_salmon_run_stats(self):
@@ -149,3 +149,9 @@ class NSO_API_S3:
 
 	def get_store_items(self):
 		return self.do_graphql_request('d08dbdd29f31471e61daa978feea697a', {})
+
+	def get_single_player_stats(self):
+		return self.do_graphql_request('fbee1a882371d4e3becec345636d7d1c', {})
+
+	def get_species_cur_weapon(self):
+		return self.do_graphql_request('49dd00428fb8e9b4dde62f585c8de1e0', {})
