@@ -7,7 +7,7 @@ class NSO_API_S3:
 		self.nso_api = nso_api
 		self.game_id = 4834290508791808  # Splatoon 3
 		self.hostname = 'api.lp1.av5ja.srv.nintendo.net'
-		self.web_app_version = '1.0.0-5e2bcdfb'  # TODO: Track this somehow?
+		self.web_app_version = '1.0.0-d3a90678'  # TODO: Track this somehow?
 		self.web_service_token = None
 		self.bullet_token = None
 
