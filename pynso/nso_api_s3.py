@@ -158,3 +158,9 @@ class NSO_API_S3:
 
 	def get_species_cur_weapon(self):
 		return self.do_graphql_request('49dd00428fb8e9b4dde62f585c8de1e0', {})
+
+	def get_sr_history(self):
+		return self.do_graphql_request('a5692cf290ffb26f14f0f7b6e5023b07', {})
+
+	def get_sr_history_detail(self, id):
+		return self.do_graphql_request('f3799a033f0a7ad4b1b396f9a3bafb1e', {'coopHistoryDetailId': id})
