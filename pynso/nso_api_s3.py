@@ -1,4 +1,6 @@
 import requests
+import urllib
+import re
 
 from .nso_expiring_token import NSO_Expiring_Token
 
@@ -22,6 +24,48 @@ class NSO_API_S3:
 			return
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.bullet_token = NSO_Expiring_Token.from_hash(keys['bullet_token']) if keys.get('bullet_token') else None
+
+	def get_web_app_js_url(self):
+		headers = {}
+		headers['Host'] = self.hostname
+		headers['Accept-Language'] = 'en-US'
+
+		# Get web app HTML
+		web_app_url = f"https://{self.hostname}/"
+		req = requests.Request('GET', web_app_url, headers = headers)
+		html = self.nso_api.do_html_request(req)
+		if html is None:
+			return None
+
+		# Find script tag
+		script = html.find(lambda tag: (tag.name == 'script') and tag.has_attr('src') and re.search("/static/", tag.get('src')))
+		if script is None:
+			self.nso_api.errors.append("Couldn't find S3 web app script tag")
+			return None
+
+		js_url = urllib.parse.urljoin(web_app_url, script.get('src'))
+		return js_url
+
+	def get_web_app_version(self, js_url):
+		headers = {}
+		headers['Host'] = self.hostname
+		headers['Accept-Language'] = 'en-US'
+
+		# Get JS
+		req = requests.Request('GET', js_url, headers = headers)
+		res = self.nso_api.do_http_request(req)
+		if res is None:
+			self.nso_api.errors.append(f"Couldn't retrieve S3 web app javascript from {js_url}")
+			return None
+
+		# Yank out the version info
+		js = res.text
+		match = re.search('"(\\d+[.]\\d+[.]\\d+)-"[^;]+"([a-fA-F0-9]{40})', js)
+		if match is None:
+			self.nso_api.errors.append(f"Couldn't find version number within S3 web app javascript")
+			return None
+
+		return {"url": js_url, "version": match[1], "revision": match[2]}
 
 	def create_bullet_token_request(self):
 		if not self.web_service_token:

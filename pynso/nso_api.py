@@ -382,6 +382,20 @@ class NSO_API:
 			return None
 		return json.loads(res.text)
 
+	# Sends the given request and expects HTML data in return.
+	# Returns a BeautifulSoup object.
+	def do_html_request(self, req, expect_status = None):
+		res = self.do_http_request(req, expect_status = expect_status)
+		if res == None:
+			return None
+
+		mimetype = res.headers.get('Content-Type')
+		if not re.match('^text/x?html\\b', mimetype):
+			self.errors.append(f'Unexpected HTTP Content-Type \'{mimetype}\', wanted text/html')
+			return None
+
+		return bs4.BeautifulSoup(res.text, 'html5lib')
+
 	# Performs an authenticated call to api-lp1.znc.srv.nintendo.net.
 	def do_znc_call(self, path, params):
 		if not self.ensure_api_login():
