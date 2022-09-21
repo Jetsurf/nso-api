@@ -8,6 +8,7 @@ import uuid
 import time
 import inspect
 import re
+import bs4
 
 from .nso_expiring_token import NSO_Expiring_Token
 from .nso_api_s2 import NSO_API_S2
@@ -353,10 +354,21 @@ class NSO_API:
 		if not expect_status:
 			expect_status = [200]
 
+		prep_req = self.session.prepare_request(req)
+
+		if self.debug >= 2:
+			self.dump_http_message(prep_req)
+		elif self.debug >= 1:
+			print(f">> {prep_req.method} {prep_req.url}")
+
 		self.last_activity_time = time.time()
-		res = self.session.send(self.session.prepare_request(req))
-		(self.debug >= 2) and self.dump_http_message(res.request)
-		(self.debug >= 2) and self.dump_http_message(res)
+		res = self.session.send(prep_req)
+
+		if self.debug >= 2:
+			self.dump_http_message(res)
+		elif self.debug >= 1:
+			print(f"<< {res.status_code} {res.reason}")
+
 		if not res.status_code in expect_status:
 			self.errors.append(f'Unexpected HTTP code {res.status_code} from request, wanted {expect_status}')
 			return None
