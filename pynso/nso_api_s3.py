@@ -9,7 +9,7 @@ class NSO_API_S3:
 		self.nso_api = nso_api
 		self.game_id = 4834290508791808  # Splatoon 3
 		self.hostname = 'api.lp1.av5ja.srv.nintendo.net'
-		self.web_app_version = '1.0.0-d3a90678'  # TODO: Track this somehow?
+		self.web_app_version = '1.0.0-63bad6e1'  # TODO: Track this somehow?
 		self.web_service_token = None
 		self.bullet_token = None
 
@@ -162,10 +162,10 @@ class NSO_API_S3:
 		return self.do_graphql_request('7d8b560e31617e981cf7c8aa1ca13a00', {})
 
 	def get_battle_history_detail(self, id):
-		return self.do_graphql_request('cd82f2ade8aca7687947c5f3210805a6', {'vsResultId': id});
+		return self.do_graphql_request('2b085984f729cd51938fc069ceef784a', {'vsResultId': id});
 
 	def get_stage_schedule(self):
-		return self.do_graphql_request('10e1d424391e78d21670227550b3509f', {})
+		return self.do_graphql_request('7d4bb0565342b7385ceb97d109e14897', {})
 
 	def get_player_stats_simple(self):
 		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
@@ -189,13 +189,13 @@ class NSO_API_S3:
 		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
 
 	def get_maps_stats(self):
-		return self.do_graphql_request('53dffcfb06b273dd7bdf6a303d310730', {})
+		return self.do_graphql_request('56c46bdbdfa4519eaf7845ce9f3cd67a', {})
 
 	def do_store_order(self, id, confirm):
-		return self.do_graphql_request('aebd822b4a4e48dc48f618411054b8f5', {'id': id, 'confirm': confirm})
+		return self.do_graphql_request('b79b7a101a243912754f72437e2ad7e5', {'id': id, 'confirm': confirm})
 
 	def get_store_items(self):
-		return self.do_graphql_request('d08dbdd29f31471e61daa978feea697a', {})
+		return self.do_graphql_request('a43dd44899a09013bcfd29b4b13314ff', {})
 
 	def get_single_player_stats(self):
 		return self.do_graphql_request('fbee1a882371d4e3becec345636d7d1c', {})
