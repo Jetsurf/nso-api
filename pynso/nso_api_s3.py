@@ -191,8 +191,8 @@ class NSO_API_S3:
 	def get_maps_stats(self):
 		return self.do_graphql_request('56c46bdbdfa4519eaf7845ce9f3cd67a', {})
 
-	def do_store_order(self, id, confirm):
-		return self.do_graphql_request('b79b7a101a243912754f72437e2ad7e5', {'id': id, 'confirm': confirm})
+	def do_store_order(self, id, confirm=False):
+		return self.do_graphql_request('b79b7a101a243912754f72437e2ad7e5', {'input' : { 'id': id, 'isForceOrder': confirm } })
 
 	def get_store_items(self):
 		return self.do_graphql_request('a43dd44899a09013bcfd29b4b13314ff', {})
