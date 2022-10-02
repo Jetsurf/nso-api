@@ -158,7 +158,7 @@ class NSO_API_S3:
 		response = self.nso_api.do_json_request(self.create_graphql_request(query_hash, variables))
 		return response
 
-	def get_battle_histories(self):
+	def get_battle_history_list(self):
 		return self.do_graphql_request('7d8b560e31617e981cf7c8aa1ca13a00', {})
 
 	def get_battle_history_detail(self, id):

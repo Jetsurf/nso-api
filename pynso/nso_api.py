@@ -155,6 +155,9 @@ class NSO_API:
 		self.notify_keys_update()
 		return
 
+	def has_error(self):
+		return len(self.errors) > 0
+
 	def get_error_message(self):
 		if len(self.errors) == 0:
 			return 'No error'
@@ -537,6 +540,7 @@ class NSO_API:
 
 		wasc = api_login_response['result']['webApiServerCredential']
 		self.api_login = NSO_Expiring_Token(wasc['accessToken'], duration = wasc['expiresIn'])
+		self.notify_keys_update()
 		return True
 
 	# Gets the web_service_token for a specific game id.
@@ -562,5 +566,5 @@ class NSO_API:
 		return NSO_Expiring_Token(web_service_token_response['result']['accessToken'], duration = web_service_token_response['result']['expiresIn'])
 
 	# Returns friend code if known.
-	def get_friend_code(self):
+	def get_cached_friend_code(self):
 		return self.cache.get("friend_code")

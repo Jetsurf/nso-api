@@ -57,6 +57,7 @@ class NSO_API_Account:
 
 		return response.result()
 
+	# Nintendo returns an empty object (dictionary) on success.
 	def send_friend_request(self, user):
 		if not user.get("nsaId"):
 			raise Exception("send_friend_request(): No nsaId for user")
