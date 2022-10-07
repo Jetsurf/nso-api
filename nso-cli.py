@@ -144,7 +144,7 @@ def s3Command(words):
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
 imink = IMink("pynso 1.0/example (discord=jetsurf#8514)")
-nso_app_version = "2.3.0"
+nso_app_version = "2.3.1"
 
 # Context is a value of your choice that will be provided to callbacks. If you
 #  create multiple client objects, you can use it to tell them apart. If you
