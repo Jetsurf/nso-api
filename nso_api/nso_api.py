@@ -78,7 +78,7 @@ class NSO_API:
 		self.s3 = NSO_API_S3(self)
 		self.acnh = NSO_API_ACNH(self)
 		self.account = NSO_API_Account(self)
-		self.debug = int(os.environ.get('PYNSO_DEBUG', 0))
+		self.debug = int(os.environ.get('NSO_API_DEBUG', 0))
 		self.errors = []
 
 	# Given an NSO_JSON_Response object, records an error message and
