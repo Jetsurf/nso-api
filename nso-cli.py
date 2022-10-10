@@ -4,8 +4,8 @@ import json
 import os.path
 import sys
 
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
+from nso_api.nso_api import NSO_API
+from nso_api.imink import IMink
 
 # Utility function to load JSON from a file
 def load_json_file(filename):
@@ -143,7 +143,7 @@ def s3Command(words):
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
-imink = IMink("pynso 1.0/example (discord=jetsurf#8514)")
+imink = IMink("nso-cli.py 1.0 (discord=jetsurf#8514)")
 nso_app_version = "2.3.1"
 
 # Context is a value of your choice that will be provided to callbacks. If you

@@ -5,7 +5,7 @@ import requests
 class IMink:
 	def __init__(self, user_agent):
 		if user_agent == None:
-			print("pynso: User Agent for iMink is not present! Please set one with a method of contact from iMink.")
+			print("nso-api: User Agent for iMink is not present! Please set one with a method of contact from iMink.")
 			#Can throw an assert, just temporary
 			sys.exit(1)
 
@@ -33,7 +33,7 @@ class IMink:
 			print(f'Unexpected HTTP code {res.status_code} from imink f')
 			return None
 
-		print(f"pynso: iMink: {res.text}")
+		print(f"nso-api: iMink: {res.text}")
 		return res.json()
 
 	def get_nso_f(self, id_token, guid):

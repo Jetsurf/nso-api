@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 setup(
-    name='pynso',
-    packages=find_packages(include=['pynso']),
-    version='1.0.0',
-    description='Nintendo Switch Online API Python Lirary',
+    name='nso-api',
+    packages=find_packages(include=['nso_api']),
+    version='0.9',
+    description='Nintendo Switch Online API Python Library',
     author='jetsurf#8514, Andy#3003',
     license='GPL',
     install_requires=['requests'],

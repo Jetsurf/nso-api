@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
+
 import json
 import os.path
 import sys
 
-from pynso.nso_api import NSO_API
-from pynso.imink import IMink
+from nso_api.nso_api import NSO_API
+from nso_api.imink import IMink
 
 def load_keys(filename):
 	if not os.path.exists(filename):
@@ -17,12 +19,12 @@ def save_keys(filename, keys):
 
 def handle_keys_update(nso, context):
 	print(f"Keys updated for context '{context}'. Saving...")
-	save_keys("nso_keys.json", nso.get_keys())
+	save_keys("nso_tokens.json", nso.get_keys())
 
 def handle_logged_out(nso, context):
 	print(f"Client for context '{context}' was logged out.")
 
-imink = IMink("pynso 1.0/example (discord=jetsurf#8514)")
+imink = IMink("nso_api 1.0/example (discord=jetsurf#8514)")
 nso_app_version = "2.3.1"
 
 # Context is a value of your choice that will be provided to callbacks. If you
@@ -34,7 +36,7 @@ nso = NSO_API(nso_app_version, imink, context)
 nso.on_keys_update(handle_keys_update)
 nso.on_logged_out(handle_logged_out)
 
-keys = load_keys("nso_keys.json")
+keys = load_keys("nso_tokens.json")
 if keys:
 	print("I have saved keys, skipping login")
 	nso.set_keys(keys)
