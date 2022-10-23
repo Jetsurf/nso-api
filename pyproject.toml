@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[owner]
+name = "jetsurf#8514 and Andy#3003 (Discord)"
+
+[project]
+name = "nso-api"
+version = "0.9"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+	"Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Jetsurf/nso-api"
+"Bug Tracker" = "https://github.com/Jetsurf/nso-api/issues"
