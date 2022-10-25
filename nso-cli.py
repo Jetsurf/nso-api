@@ -111,6 +111,9 @@ def s3Command(words):
 	elif command == 'get-store-items':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_store_items()))
+	elif command == 'get-player-stats-full':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_player_stats_full()))
 	elif command == 'get-battle-history-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_battle_history_list()))
@@ -138,6 +141,7 @@ def s3Command(words):
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
 		print("  get-store-items")
+		print("  get-player-stats-full")
 		print("  get-battle-history-list")
 		print("  get-battle-history-details <battlenum>")
 	else:
