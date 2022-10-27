@@ -9,7 +9,7 @@ class NSO_API_S3:
 		self.nso_api = nso_api
 		self.game_id = 4834290508791808  # Splatoon 3
 		self.hostname = 'api.lp1.av5ja.srv.nintendo.net'
-		self.web_app_version = '1.0.0-5644e7a2'  # TODO: Track this somehow?
+		self.web_app_version = '1.0.0-216d0219'  # TODO: Track this somehow?
 		self.web_service_token = None
 		self.bullet_token = None
 
@@ -171,7 +171,7 @@ class NSO_API_S3:
 		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
 
 	def get_player_stats_full(self):
-		return self.do_graphql_request('9d4ef9fba3f84d6933bb1f6f436f7200', {})
+		return self.do_graphql_request('29957cf5d57b893934de857317cd46d8', {})
 
 	def get_salmon_run_stats(self):
 		return self.do_graphql_request('817618ce39bcf5570f52a97d73301b30', {})
@@ -208,3 +208,6 @@ class NSO_API_S3:
 
 	def get_sr_history_detail(self, id):
 		return self.do_graphql_request('f3799a033f0a7ad4b1b396f9a3bafb1e', {'coopHistoryDetailId': id})
+	
+	def get_weapons_stats(self):
+		return self.do_graphql_request('23c9b2b4ad878c2d91a68859be928dea', {})
