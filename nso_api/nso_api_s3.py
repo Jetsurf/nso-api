@@ -1,15 +1,19 @@
 import requests
 import urllib
+import base64
 import re
+import time
 
 from .nso_expiring_token import NSO_Expiring_Token
 
 class NSO_API_S3:
+	FALLBACK_VERSION = {"version": "1.0.0", "revision": "5644e7a2ab85c0c2a167847b635027afd13143c9"}
+	shared_cache = {}
+
 	def __init__(self, nso_api):
 		self.nso_api = nso_api
 		self.game_id = 4834290508791808  # Splatoon 3
 		self.hostname = 'api.lp1.av5ja.srv.nintendo.net'
-		self.web_app_version = '1.0.0-216d0219'  # TODO: Track this somehow?
 		self.web_service_token = None
 		self.bullet_token = None
 
@@ -25,7 +29,7 @@ class NSO_API_S3:
 		self.web_service_token = NSO_Expiring_Token.from_hash(keys['web_service_token']) if keys.get('web_service_token') else None
 		self.bullet_token = NSO_Expiring_Token.from_hash(keys['bullet_token']) if keys.get('bullet_token') else None
 
-	def get_web_app_js_url(self):
+	def get_web_app_urls(self):
 		headers = {}
 		headers['Host'] = self.hostname
 		headers['Accept-Language'] = 'en-US'
@@ -37,16 +41,30 @@ class NSO_API_S3:
 		if html is None:
 			return None
 
-		# Find script tag
+		# Find script tag for JS
 		script = html.find(lambda tag: (tag.name == 'script') and tag.has_attr('src') and re.search("/static/", tag.get('src')))
 		if script is None:
 			self.nso_api.errors.append("Couldn't find S3 web app script tag")
 			return None
 
-		js_url = urllib.parse.urljoin(web_app_url, script.get('src'))
-		return js_url
+		# Find link tag for CSS
+		link = html.find(lambda tag: (tag.name == 'link') and tag.has_attr('href') and re.search(r'/static/', tag.get('href')) and ("stylesheet" in tag.get('rel')))
+		if link is None:
+			self.nso_api.errors.append("Couldn't find S3 web app link tag")
+			return None
 
-	def get_web_app_version(self, js_url):
+		js_url = urllib.parse.urljoin(web_app_url, script.get('src'))
+		css_url = urllib.parse.urljoin(web_app_url, link.get('href'))
+		return {"js": js_url, "css": css_url}
+
+	def cache_web_app_js(self, js_url = None):
+		# If no URL provided, retrieve it
+		if js_url is None:
+			urls = self.get_web_app_urls()
+			if urls is None:
+				return False
+			js_url = urls['js']
+
 		headers = {}
 		headers['Host'] = self.hostname
 		headers['Accept-Language'] = 'en-US'
@@ -56,16 +74,96 @@ class NSO_API_S3:
 		res = self.nso_api.do_http_request(req)
 		if res is None:
 			self.nso_api.errors.append(f"Couldn't retrieve S3 web app javascript from {js_url}")
-			return None
+			return False
+
+		# Save to shared cache
+		now = time.time()
+		self.shared_cache['web_app_js'] = {"retrievetime": now, "expiretime": now + (6 * 3600), "data": {"url": js_url, "text": res.text}}
+		return True
+
+	def ensure_web_app_js(self, js_url = None):
+		if 'web_app_js' in self.shared_cache:
+			if time.time() < self.shared_cache['web_app_js']['expiretime']:
+				return True
+
+		return self.cache_web_app_js(js_url)
+
+	def cache_web_app_version(self):
+		if not self.ensure_web_app_js():
+			self.cache_web_app_fallback_version()
+			return False  # Couldn't get JS
 
 		# Yank out the version info
-		js = res.text
-		match = re.search('"(\\d+[.]\\d+[.]\\d+)-"[^;]+"([a-fA-F0-9]{40})', js)
+		js = self.shared_cache['web_app_js']['data']['text']
+		#match = re.search('"(\\d+[.]\\d+[.]\\d+)-"[^;]+"([a-fA-F0-9]{40})', js)
+		match = re.search(r'"([a-fA-F0-9]{40})".{1,64}substring\(0,8\).{1,64}"(\d+[.]\d+[.]\d+)-"', js)
 		if match is None:
-			self.nso_api.errors.append(f"Couldn't find version number within S3 web app javascript")
-			return None
+			self.cache_web_app_fallback_version()
+			self.nso_api.errors.append(f"Couldn't find version number within S3 web app JS, using fallback version")
+			return False
 
-		return {"url": js_url, "version": match[1], "revision": match[2]}
+		# Save to shared cache
+		now = time.time()
+		self.shared_cache['web_app_version'] =  {"retrievetime": now, "expiretime": self.shared_cache['web_app_js']['expiretime'], "data": {"url": self.shared_cache['web_app_js']['data']['url'], "version": match[2], "revision": match[1]}}
+		return True
+
+	# If we can't obtain the web app version automatically, as a fallback we can use the last-known version
+	def cache_web_app_fallback_version(self):
+		now = time.time()
+		expiretime = now + (30 * 60)  # 30 minutes
+		self.shared_cache['web_app_version'] = {"retrievetime": now, "expiretime": expiretime, "data": {"version": self.FALLBACK_VERSION['version'], "revision": self.FALLBACK_VERSION['revision'], "fallback": True}}
+
+	def ensure_web_app_version(self):
+		if 'web_app_version' in self.shared_cache:
+			if time.time() < self.shared_cache['web_app_version']['expiretime']:
+				return True
+
+		return self.cache_web_app_version()
+
+	def get_web_app_version(self):
+		self.ensure_web_app_version()
+		return self.shared_cache['web_app_version']['data']
+
+	def get_web_app_version_string(self):
+		self.ensure_web_app_version()
+
+		return f"{self.shared_cache['web_app_version']['data']['version']}-{self.shared_cache['web_app_version']['data']['revision'][0:8]}"
+
+	def get_web_app_image_links(self):
+		if not self.ensure_web_app_js():
+			return None  # Couldn't get JS
+
+		links = []
+		js = self.shared_cache['web_app_js']['data']['text']
+		matches = re.findall(r'"(static/media/([-.a-zA-Z0-9]+\.(?:png|svg)))', js)
+		for m in matches:
+			url = urllib.parse.urljoin(f"https://{self.hostname}/", m[0])
+			links.append({"url": url, "filename": m[1]})
+
+		return links
+
+#	def extract_embedded_images(self, url):
+#		headers = {}
+#		headers['Host'] = self.hostname
+#		headers['Accept-Language'] = 'en-US'
+#
+#		# Get JS
+#		req = requests.Request('GET', url, headers = headers)
+#		res = self.nso_api.do_http_request(req)
+#		if res is None:
+#			self.nso_api.errors.append(f"Couldn't retrieve S3 web app URL {url}")
+#			return None
+#
+#		images = []
+#
+#		# Find data URLs with image/png mimetype
+#		js = res.text
+#		matches = re.findall(r'data:image/png;base64,([A-Za-z0-9/+]+={0,2})', js)
+#		for m in matches:
+#			data = base64.b64decode(m)
+#			images.append({"mimetype": "image/png", "data": data})
+#
+#		return images
 
 	def create_bullet_token_request(self):
 		if not self.web_service_token:
@@ -79,7 +177,7 @@ class NSO_API_S3:
 		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['X-Platform'] = 'Android'
-		headers['X-Web-View-Ver'] = self.web_app_version
+		headers['X-Web-View-Ver'] = self.get_web_app_version_string()
 		headers['X-NACOUNTRY'] = self.nso_api.user_info['country']
 		headers['Accept-Language'] = 'en-US'
 		headers['X-GameWebToken'] = self.web_service_token.value
@@ -99,7 +197,7 @@ class NSO_API_S3:
 		headers['Host'] = self.hostname
 		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
-		headers['X-Web-View-Ver'] = self.web_app_version
+		headers['X-Web-View-Ver'] = self.get_web_app_version_string()
 		headers['Accept-Language'] = 'en-US'
 		headers['Authorization'] = f"Bearer {self.bullet_token.value}"
 
@@ -171,7 +269,7 @@ class NSO_API_S3:
 		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
 
 	def get_player_stats_full(self):
-		return self.do_graphql_request('29957cf5d57b893934de857317cd46d8', {})
+		return self.do_graphql_request('9d4ef9fba3f84d6933bb1f6f436f7200', {})
 
 	def get_salmon_run_stats(self):
 		return self.do_graphql_request('817618ce39bcf5570f52a97d73301b30', {})
@@ -208,6 +306,3 @@ class NSO_API_S3:
 
 	def get_sr_history_detail(self, id):
 		return self.do_graphql_request('f3799a033f0a7ad4b1b396f9a3bafb1e', {'coopHistoryDetailId': id})
-	
-	def get_weapons_stats(self):
-		return self.do_graphql_request('23c9b2b4ad878c2d91a68859be928dea', {})

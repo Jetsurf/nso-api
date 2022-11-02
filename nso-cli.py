@@ -99,7 +99,13 @@ def s2Command(words):
 
 def s3Command(words):
 	command = words.pop(0)
-	if command == 'get-splatfest-list':
+	if command == 'get-web-app-version':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_web_app_version()))
+	elif command == 'get-web-app-image-links':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_web_app_image_links()))
+	elif command == 'get-splatfest-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_splatfest_list()))
 	elif command == 'get-salmon-run-stats':
@@ -134,9 +140,11 @@ def s3Command(words):
 			return
 
 		details = nso.s3.get_battle_history_detail(battles[int(args['battlenum'])]['id'])
-		print(repr(details))
+		print(json.dumps(details))
 	elif command == '--help':
 		print("Subcommands of 's3' are:")
+		print("  get-web-app-version")
+		print("  get-web-app-images")
 		print("  get-splatfest-list")
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
@@ -150,13 +158,8 @@ def s3Command(words):
 imink = IMink("nso-cli.py 1.0 (discord=jetsurf#8514)")
 nso_app_version = "2.3.1"
 
-# Context is a value of your choice that will be provided to callbacks. If you
-#  create multiple client objects, you can use it to tell them apart. If you
-#  don't, its value does not matter.
-context = 123
-
 # Create NSO client object
-nso = NSO_API(nso_app_version, imink, context)
+nso = NSO_API(nso_app_version, imink)
 nso.on_keys_update(handle_keys_update)
 nso.on_logged_out(handle_logged_out)
 
