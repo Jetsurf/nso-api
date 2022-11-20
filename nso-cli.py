@@ -21,7 +21,6 @@ def save_json_file(filename, keys):
 
 # The NSO client object will trigger this callback when the tokens change.
 def handle_keys_update(nso, context):
-	print(f"Tokens updated for context '{context}'. Saving...")
 	save_json_file("nso_tokens.json", nso.get_keys())
 
 # The NSO client object will trigger this callback when it detects that the
@@ -34,7 +33,6 @@ def handle_logged_out(nso, context):
 def load_tokens(nso):
 	keys = load_json_file("nso_tokens.json")
 	if keys:
-		print("Reading tokens...")
 		nso.set_keys(keys)
 
 	if not nso.is_logged_in():
@@ -141,10 +139,19 @@ def s3Command(words):
 
 		details = nso.s3.get_battle_history_detail(battles[int(args['battlenum'])]['id'])
 		print(json.dumps(details))
+	elif command == 'get-outfits':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_outfits()))
+	elif command == 'get-outfits-common-data':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_outfits_common_data()))
+	elif command == 'get-replay-list':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_replay_list()))
 	elif command == '--help':
 		print("Subcommands of 's3' are:")
 		print("  get-web-app-version")
-		print("  get-web-app-images")
+		print("  get-web-app-image-links")
 		print("  get-splatfest-list")
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
@@ -152,6 +159,9 @@ def s3Command(words):
 		print("  get-player-stats-full")
 		print("  get-battle-history-list")
 		print("  get-battle-history-details <battlenum>")
+		print("  get-outfits")
+		print("  get-outfits-common-data")
+		print("  get-replay-list")
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 

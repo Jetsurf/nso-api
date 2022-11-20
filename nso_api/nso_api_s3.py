@@ -306,3 +306,12 @@ class NSO_API_S3:
 
 	def get_sr_history_detail(self, id):
 		return self.do_graphql_request('f3799a033f0a7ad4b1b396f9a3bafb1e', {'coopHistoryDetailId': id})
+
+	def get_outfits(self):
+		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
+
+	def get_outfits_common_data(self):
+		return self.do_graphql_request('d29cd0c2b5e6bac90dd5b817914832f8', {})
+
+	def get_replay_list(self):
+		return self.do_graphql_request('f98cc8326d0d17b07a5785096b0f3517', {})
