@@ -7,7 +7,7 @@ import time
 from .nso_expiring_token import NSO_Expiring_Token
 
 class NSO_API_S3:
-	FALLBACK_VERSION = {"version": "1.0.0", "revision": "5644e7a2ab85c0c2a167847b635027afd13143c9"}
+	FALLBACK_VERSION = {"version": "1.0.0", "revision": "433ec0e8843b9d86851895a2124dff4e61e01374"}
 	shared_cache = {}
 
 	def __init__(self, nso_api):
