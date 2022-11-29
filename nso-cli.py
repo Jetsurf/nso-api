@@ -49,6 +49,12 @@ def load_tokens(nso):
 
 		print("Login successful")
 
+def showUsageMessage():
+	print(f"Usage: {sys.argv[0]} <category> <command>")
+	print(f"       {sys.argv[0]} <category> --help")
+	print("Categories are: account s2 s3")
+	return
+
 def grabArguments(args, min, max, names):
 		if len(args) < min:
 			print(f"Too few args, got {len(args)} but expected at least {min}")
@@ -139,6 +145,34 @@ def s3Command(words):
 
 		details = nso.s3.get_battle_history_detail(battles[int(args['battlenum'])]['id'])
 		print(json.dumps(details))
+	elif command == 'get-salmon-run-history-list':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_sr_history_list()))
+	elif command == 'get-salmon-run-history-details':
+		args = grabArguments(words, 1, 1, ['shiftnum'])
+		list = nso.s3.get_sr_history_list()
+		if list is None:
+			print("Failed to get salmon run history list")
+			return
+
+		# The response has shifts grouped by rotation. Here we gather a linear list of shifts.
+		groups = list['data']['coopResult']['historyGroups']['nodes']
+		shifts = []
+		for g in groups:
+			for s in g['historyDetails']['nodes']:
+				shifts.append(s)
+
+		if len(shifts) == 0:
+			print("No shifts in history list")
+			return
+
+		if (int(args['shiftnum']) < 0) or (int(args['shiftnum']) >= len(shifts)):
+			print(f"Requested shift {args['shiftnum']} but there are only entries 0 through {len(shifts) - 1}")
+			return
+
+		shift = shifts[int(args['shiftnum'])]
+		details = nso.s3.get_sr_history_detail(shift['id'])
+		print(json.dumps(details))
 	elif command == 'get-outfits':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_outfits()))
@@ -159,6 +193,8 @@ def s3Command(words):
 		print("  get-player-stats-full")
 		print("  get-battle-history-list")
 		print("  get-battle-history-details <battlenum>")
+		print("  get-salmon-run-history-list")
+		print("  get-salmon-run-history-details <shiftnum>")
 		print("  get-outfits")
 		print("  get-outfits-common-data")
 		print("  get-replay-list")
@@ -181,7 +217,7 @@ if not nso.is_logged_in():
 	exit(1)
 
 if len(sys.argv) < 3:
-	print(f"Usage: {sys.argv[0]} <category> <command>")
+	showUsageMessage()
 	exit(1)
 
 category = sys.argv[1]
@@ -192,8 +228,8 @@ elif category == 's2':
 elif category == 's3':
 	s3Command(sys.argv[2:])
 elif category == '--help':
-	print(f"Usage: {sys.argv[0]} <category> <command>")
-	print("Categories are: account s2 s3")
+	showUsageMessage()
+	exit(1)
 else:
 	print(f"Unknown category '{category}'. Try '--help' for help.")
 	exit(1)

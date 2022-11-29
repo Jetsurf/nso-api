@@ -331,7 +331,7 @@ class NSO_API_S3:
 	def get_species_cur_weapon(self):
 		return self.do_graphql_request('BattleHistoryCurrentPlayerQuery', {})
 
-	def get_sr_history(self):
+	def get_sr_history_list(self):
 		return self.do_graphql_request('refetchableCoopHistory_coopResultQuery', {})
 
 	def get_sr_history_detail(self, id):
