@@ -8,6 +8,30 @@ from .nso_expiring_token import NSO_Expiring_Token
 
 class NSO_API_S3:
 	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
+
+	GRAPHQL_QUERY_IDS = {
+		'LatestBattleHistoriesQuery':              '4f5f26e64bca394b45345a65a2f383bd',
+		'VsHistoryDetailQuery':                    '291295ad311b99a6288fc95a5c4cb2d2',
+		'StageScheduleQuery':                      '730cd98e84f1030d3e9ac86b6f1aae13',
+		'ReplayQuery':                             '412b09ef4eb7b67c86333f70a40ff6ba',
+		'CoopHistoryDetailQuery':                  '3cc5f826a6646b85f3ae45db51bd0707',
+		'refetchableCoopHistory_coopResultQuery':  'd82a506052aef380e584c695e105f78b',
+		'StageRecordQuery':                        'f08a932d533845dde86e674e03bbb7d3',
+		'WeaponRecordQuery':                       '5f279779e7081f2d14ae1ddca0db2b6e',
+		'CoopHistoryQuery':                        '6ed02537e4a65bbb5e7f4f23092f6154',
+		'HistoryRecordQuery':                      '32b6771f94083d8f04848109b7300af5',
+		'ConfigureAnalyticsQuery':                 'f8ae00773cc412a50dd41a6d9a159ddd',
+		'MyOutfitsQuery':                          '81d9a6849467d2aa6b1603ebcedbddbe',
+		'BattleHistoryCurrentPlayerQuery':         '49dd00428fb8e9b4dde62f585c8de1e0',
+		'HeroHistoryQuery':                        'fbee1a882371d4e3becec345636d7d1c',
+		'myOutfitCommonDataEquipmentsQuery':       'd29cd0c2b5e6bac90dd5b817914832f8',
+		'GesotownQuery':                           'a43dd44899a09013bcfd29b4b13314ff',
+		'SaleGearDetailOrderGesotownGearMutation': 'b79b7a101a243912754f72437e2ad7e5',
+		'MyOutfitsQuery':                          '81d9a6849467d2aa6b1603ebcedbddbe',
+		'FestRecordQuery':                         '44c76790b68ca0f3da87f2a3452de986',
+		'useCurrentFestQuery':                     'c0429fd738d829445e994d3370999764',
+	}
+
 	shared_cache = {}
 
 	def __init__(self, nso_api):
@@ -248,69 +272,76 @@ class NSO_API_S3:
 		self.nso_api.notify_keys_update()
 		return True
 
-	def do_graphql_request(self, query_hash, variables):
+	def do_graphql_request(self, query, variables):
 		if not self.ensure_bullet_token():
 			return None
+
+		# The query can be specified either by name or as a 32-character hex string.
+		query_hash = self.GRAPHQL_QUERY_IDS.get(query)
+		if (query_hash is None) and (len(query) == 32) and re.match(r'^[0-9a-f]{32}$', query):
+			query_hash = query
+		elif query_hash is None:
+			raise Exception("Unknown query")
 
 		response = self.nso_api.do_json_request(self.create_graphql_request(query_hash, variables))
 		return response
 
 	def get_battle_history_list(self):
-		return self.do_graphql_request('7d8b560e31617e981cf7c8aa1ca13a00', {})
+		return self.do_graphql_request('LatestBattleHistoriesQuery', {})
 
 	def get_battle_history_detail(self, id):
-		return self.do_graphql_request('2b085984f729cd51938fc069ceef784a', {'vsResultId': id});
+		return self.do_graphql_request('VsHistoryDetailQuery', {'vsResultId': id});
 
 	def get_stage_schedule(self):
-		return self.do_graphql_request('7d4bb0565342b7385ceb97d109e14897', {})
+		return self.do_graphql_request('StageScheduleQuery', {})
 
 	def get_player_stats_simple(self):
-		return self.do_graphql_request('f8ae00773cc412a50dd41a6d9a159ddd', {})
+		return self.do_graphql_request('ConfigureAnalyticsQuery', {})
 
 	def get_player_stats_full(self):
-		return self.do_graphql_request('9d4ef9fba3f84d6933bb1f6f436f7200', {})
+		return self.do_graphql_request('HistoryRecordQuery', {})
 
 	def get_salmon_run_stats(self):
-		return self.do_graphql_request('817618ce39bcf5570f52a97d73301b30', {})
+		return self.do_graphql_request('CoopHistoryQuery', {})
 
 	def get_current_splatfest(self):
-		return self.do_graphql_request('c0429fd738d829445e994d3370999764', {})
+		return self.do_graphql_request('useCurrentFestQuery', {})
 
 	def get_splatfest_list(self):
-		return self.do_graphql_request('44c76790b68ca0f3da87f2a3452de986', {})
+		return self.do_graphql_request('FestRecordQuery', {})
 
 	def get_weapon_stats(self):
-		return self.do_graphql_request('a0c277c719b758a926772879d8e53ef8', {})
+		return self.do_graphql_request('WeaponRecordQuery', {})
 
 	def get_fits(self):
-		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
+		return self.do_graphql_request('MyOutfitsQuery', {})
 
 	def get_maps_stats(self):
-		return self.do_graphql_request('56c46bdbdfa4519eaf7845ce9f3cd67a', {})
+		return self.do_graphql_request('StageRecordQuery', {})
 
 	def do_store_order(self, id, confirm=False):
-		return self.do_graphql_request('b79b7a101a243912754f72437e2ad7e5', {'input' : { 'id': id, 'isForceOrder': confirm } })
+		return self.do_graphql_request('SaleGearDetailOrderGesotownGearMutation', {'input' : { 'id': id, 'isForceOrder': confirm } })
 
 	def get_store_items(self):
-		return self.do_graphql_request('a43dd44899a09013bcfd29b4b13314ff', {})
+		return self.do_graphql_request('GesotownQuery', {})
 
 	def get_single_player_stats(self):
-		return self.do_graphql_request('fbee1a882371d4e3becec345636d7d1c', {})
+		return self.do_graphql_request('HeroHistoryQuery', {})
 
 	def get_species_cur_weapon(self):
-		return self.do_graphql_request('49dd00428fb8e9b4dde62f585c8de1e0', {})
+		return self.do_graphql_request('BattleHistoryCurrentPlayerQuery', {})
 
 	def get_sr_history(self):
-		return self.do_graphql_request('a5692cf290ffb26f14f0f7b6e5023b07', {})
+		return self.do_graphql_request('refetchableCoopHistory_coopResultQuery', {})
 
 	def get_sr_history_detail(self, id):
-		return self.do_graphql_request('f3799a033f0a7ad4b1b396f9a3bafb1e', {'coopHistoryDetailId': id})
+		return self.do_graphql_request('CoopHistoryDetailQuery', {'coopHistoryDetailId': id})
 
 	def get_outfits(self):
-		return self.do_graphql_request('81d9a6849467d2aa6b1603ebcedbddbe', {})
+		return self.do_graphql_request('MyOutfitsQuery', {})
 
 	def get_outfits_common_data(self):
-		return self.do_graphql_request('d29cd0c2b5e6bac90dd5b817914832f8', {})
+		return self.do_graphql_request('myOutfitCommonDataEquipmentsQuery', {})
 
 	def get_replay_list(self):
-		return self.do_graphql_request('f98cc8326d0d17b07a5785096b0f3517', {})
+		return self.do_graphql_request('ReplayQuery', {})
