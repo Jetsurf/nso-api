@@ -7,7 +7,7 @@ import time
 from .nso_expiring_token import NSO_Expiring_Token
 
 class NSO_API_S3:
-	FALLBACK_VERSION = {"version": "1.0.0", "revision": "433ec0e8843b9d86851895a2124dff4e61e01374"}
+	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
 	shared_cache = {}
 
 	def __init__(self, nso_api):
@@ -95,8 +95,7 @@ class NSO_API_S3:
 
 		# Yank out the version info
 		js = self.shared_cache['web_app_js']['data']['text']
-		#match = re.search('"(\\d+[.]\\d+[.]\\d+)-"[^;]+"([a-fA-F0-9]{40})', js)
-		match = re.search(r'"([a-fA-F0-9]{40})".{1,64}substring\(0,8\).{1,64}"(\d+[.]\d+[.]\d+)-"', js)
+		match = re.search(r'(["\'])([a-fA-F0-9]{40})\1.{1,96}substring\(0,8\).{1,96}(["\'`])(\d+[.]\d+[.]\d+)-', js)
 		if match is None:
 			self.cache_web_app_fallback_version()
 			self.nso_api.errors.append(f"Couldn't find version number within S3 web app JS, using fallback version")
@@ -104,7 +103,7 @@ class NSO_API_S3:
 
 		# Save to shared cache
 		now = time.time()
-		self.shared_cache['web_app_version'] =  {"retrievetime": now, "expiretime": self.shared_cache['web_app_js']['expiretime'], "data": {"url": self.shared_cache['web_app_js']['data']['url'], "version": match[2], "revision": match[1]}}
+		self.shared_cache['web_app_version'] =  {"retrievetime": now, "expiretime": self.shared_cache['web_app_js']['expiretime'], "data": {"url": self.shared_cache['web_app_js']['data']['url'], "version": match[4], "revision": match[2]}}
 		return True
 
 	# If we can't obtain the web app version automatically, as a fallback we can use the last-known version
