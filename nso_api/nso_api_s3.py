@@ -5,6 +5,7 @@ import re
 import time
 
 from .nso_expiring_token import NSO_Expiring_Token
+import nso_api.utils
 
 class NSO_API_S3:
 	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
@@ -345,3 +346,46 @@ class NSO_API_S3:
 
 	def get_replay_list(self):
 		return self.do_graphql_request('ReplayQuery', {})
+
+	# Used to collect data for LeanYoshi's gear seed checker at https://leanny.github.io/splat3seedchecker/.
+	def get_gear_seed_data(self):
+		# Get outfits data
+		if not (outfits_data := self.get_outfits_common_data()):
+			print("Couldn't get outfits data")
+			return None
+
+		# Get battle history list
+		if not (history_list := self.get_battle_history_list()):
+			print("Couldn't get battle history list")
+			return None
+
+		# Extract base64 player id string
+		b64_player_id = None
+		if len(groups := history_list['data']['latestBattleHistories']['historyGroupsOnlyFirst']['nodes']) and len(groups[0]['historyDetails']['nodes']):
+			b64_player_id = groups[0]['historyDetails']['nodes'][0]['player']['id']
+
+		if b64_player_id is None:
+			print("Couldn't find player_id")
+			return None
+
+		# Extract raw player id
+		player_id = base64.b64decode(b64_player_id).decode("utf-8")
+		if not (match := re.search(r':(u-[a-z0-9]{20})$', player_id)):
+			print("Couldn't extract raw player id")
+			return None
+
+		# Generate a hash of the raw player id (including "u-" prefix)
+		raw_player_id = match[1].encode("utf-8")
+		hash = nso_api.utils.murmurhash3_32(raw_player_id, 0)
+
+		# Create a "key" (obfuscated user id) by xoring the low byte
+		#  of the hash with each byte of the raw player id
+		key = bytes([(b ^ (hash & 0xFF)) for b in list(raw_player_id)])
+
+		data = {}
+		data['h'] = hash
+		data['key'] = base64.b64encode(key).decode("utf-8")
+		data['timestamp'] = int(time.time())
+		data['gear'] = outfits_data
+		return data
+

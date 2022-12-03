@@ -182,6 +182,17 @@ def s3Command(words):
 	elif command == 'get-replay-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_replay_list()))
+	elif command == 'export-gear-seed-file':
+		args = grabArguments(words, 0, 0, [])
+		if not (data := nso.s3.get_gear_seed_data()):
+			print("Could not get gear seed data")
+			return
+
+		filename = f"gear_{data['timestamp']}.json"
+		with open(filename, "w") as f:
+			json.dump(data, f)
+
+		print(f"Exported to: {filename}")
 	elif command == '--help':
 		print("Subcommands of 's3' are:")
 		print("  get-web-app-version")
@@ -198,6 +209,7 @@ def s3Command(words):
 		print("  get-outfits")
 		print("  get-outfits-common-data")
 		print("  get-replay-list")
+		print("  export-gear-seed-file")
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
