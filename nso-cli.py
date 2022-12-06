@@ -221,7 +221,7 @@ def s3Command(words):
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
 imink = IMink("nso-cli.py 1.0 (discord=jetsurf#8514)")
-nso_app_version = "2.3.1"
+nso_app_version = "2.4.0"
 
 # Create NSO client object
 nso = NSO_API(nso_app_version, imink)
