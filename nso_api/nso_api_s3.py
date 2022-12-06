@@ -179,7 +179,7 @@ class NSO_API_S3:
 
 		links = []
 		js = self.shared_cache['web_app_js']['data']['text']
-		matches = re.findall(r'"(static/media/([-.a-zA-Z0-9]+\.(?:png|svg)))', js)
+		matches = re.findall(r'"(static/media/([-_.a-zA-Z0-9]+\.(?:png|svg)))', js)
 		for m in matches:
 			url = urllib.parse.urljoin(f"https://{self.hostname}/", m[0])
 			links.append({"url": url, "filename": m[1]})
