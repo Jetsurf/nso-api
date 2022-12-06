@@ -109,6 +109,12 @@ def s3Command(words):
 	elif command == 'get-web-app-image-links':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_web_app_image_links()))
+	elif command == 'extract-web-app-embedded-images':
+		args = grabArguments(words, 0, 0, [])
+		images = nso.s3.extract_web_app_embedded_images()
+		print("%-64s  %-6s  %s" % ('sha256', 'length', 'mimetype'))
+		for i in images:
+			print("%s  %6d  %s" % (i['sha256'], len(i['data']), i['mimetype']))
 	elif command == 'get-splatfest-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_splatfest_list()))
@@ -197,6 +203,7 @@ def s3Command(words):
 		print("Subcommands of 's3' are:")
 		print("  get-web-app-version")
 		print("  get-web-app-image-links")
+		print("  extract-web-app-images")
 		print("  get-splatfest-list")
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
