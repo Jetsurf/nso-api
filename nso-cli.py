@@ -109,6 +109,12 @@ def s3Command(words):
 	elif command == 'get-web-app-image-links':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_web_app_image_links()))
+	elif command == 'extract-web-app-embedded-images':
+		args = grabArguments(words, 0, 0, [])
+		images = nso.s3.extract_web_app_embedded_images()
+		print("%-64s  %-6s  %s" % ('sha256', 'length', 'mimetype'))
+		for i in images:
+			print("%s  %6d  %s" % (i['sha256'], len(i['data']), i['mimetype']))
 	elif command == 'get-splatfest-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_splatfest_list()))
@@ -182,10 +188,22 @@ def s3Command(words):
 	elif command == 'get-replay-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_replay_list()))
+	elif command == 'export-gear-seed-file':
+		args = grabArguments(words, 0, 0, [])
+		if not (data := nso.s3.get_gear_seed_data()):
+			print("Could not get gear seed data")
+			return
+
+		filename = f"gear_{data['timestamp']}.json"
+		with open(filename, "w") as f:
+			json.dump(data, f)
+
+		print(f"Exported to: {filename}")
 	elif command == '--help':
 		print("Subcommands of 's3' are:")
 		print("  get-web-app-version")
 		print("  get-web-app-image-links")
+		print("  extract-web-app-images")
 		print("  get-splatfest-list")
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
@@ -198,11 +216,12 @@ def s3Command(words):
 		print("  get-outfits")
 		print("  get-outfits-common-data")
 		print("  get-replay-list")
+		print("  export-gear-seed-file")
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
 imink = IMink("nso-cli.py 1.0 (discord=jetsurf#8514)")
-nso_app_version = "2.3.1"
+nso_app_version = "2.4.0"
 
 # Create NSO client object
 nso = NSO_API(nso_app_version, imink)

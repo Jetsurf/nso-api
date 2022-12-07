@@ -3,8 +3,10 @@ import urllib
 import base64
 import re
 import time
+import hashlib
 
 from .nso_expiring_token import NSO_Expiring_Token
+import nso_api.utils
 
 class NSO_API_S3:
 	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
@@ -81,20 +83,13 @@ class NSO_API_S3:
 		css_url = urllib.parse.urljoin(web_app_url, link.get('href'))
 		return {"js": js_url, "css": css_url}
 
-	def cache_web_app_js(self, js_url = None):
-		# If no URL provided, retrieve it
-		if js_url is None:
-			urls = self.get_web_app_urls()
-			if urls is None:
-				return False
-			js_url = urls['js']
-
+	def cache_web_app_resource(self, cache_key, url = None):
 		headers = {}
 		headers['Host'] = self.hostname
 		headers['Accept-Language'] = 'en-US'
 
-		# Get JS
-		req = requests.Request('GET', js_url, headers = headers)
+		# Get resource
+		req = requests.Request('GET', url, headers = headers)
 		res = self.nso_api.do_http_request(req)
 		if res is None:
 			self.nso_api.errors.append(f"Couldn't retrieve S3 web app javascript from {js_url}")
@@ -102,15 +97,41 @@ class NSO_API_S3:
 
 		# Save to shared cache
 		now = time.time()
-		self.shared_cache['web_app_js'] = {"retrievetime": now, "expiretime": now + (6 * 3600), "data": {"url": js_url, "text": res.text}}
+		self.shared_cache[cache_key] = {"retrievetime": now, "expiretime": now + (6 * 3600), "data": {"url": url, "text": res.text}}
 		return True
 
-	def ensure_web_app_js(self, js_url = None):
+	def ensure_web_app_urls(self):
+		if 'web_app_urls' in self.shared_cache:
+			if time.time() < self.shared_cache['web_app_urls']['expiretime']:
+				return True
+
+		urls = self.get_web_app_urls()
+		if urls is None:
+			return False
+
+		now = int(time.time())
+		self.shared_cache['web_app_urls'] = {"retrievetime": now, "expiretime": now + (6 * 3600), "urls": urls}
+		return True
+
+	def ensure_web_app_js(self):
 		if 'web_app_js' in self.shared_cache:
 			if time.time() < self.shared_cache['web_app_js']['expiretime']:
 				return True
 
-		return self.cache_web_app_js(js_url)
+		if not self.ensure_web_app_urls():
+			return False
+
+		return self.cache_web_app_resource('web_app_js', self.shared_cache['web_app_urls']['urls']['js'])
+
+	def ensure_web_app_css(self, css_url = None):
+		if 'web_app_css' in self.shared_cache:
+			if time.time() < self.shared_cache['web_app_css']['expiretime']:
+				return True
+
+		if not self.ensure_web_app_urls():
+			return False
+
+		return self.cache_web_app_resource('web_app_css', self.shared_cache['web_app_urls']['urls']['css'])
 
 	def cache_web_app_version(self):
 		if not self.ensure_web_app_js():
@@ -158,35 +179,35 @@ class NSO_API_S3:
 
 		links = []
 		js = self.shared_cache['web_app_js']['data']['text']
-		matches = re.findall(r'"(static/media/([-.a-zA-Z0-9]+\.(?:png|svg)))', js)
+		matches = re.findall(r'"(static/media/([-_.a-zA-Z0-9]+\.(?:png|svg)))', js)
 		for m in matches:
 			url = urllib.parse.urljoin(f"https://{self.hostname}/", m[0])
 			links.append({"url": url, "filename": m[1]})
 
 		return links
 
-#	def extract_embedded_images(self, url):
-#		headers = {}
-#		headers['Host'] = self.hostname
-#		headers['Accept-Language'] = 'en-US'
-#
-#		# Get JS
-#		req = requests.Request('GET', url, headers = headers)
-#		res = self.nso_api.do_http_request(req)
-#		if res is None:
-#			self.nso_api.errors.append(f"Couldn't retrieve S3 web app URL {url}")
-#			return None
-#
-#		images = []
-#
-#		# Find data URLs with image/png mimetype
-#		js = res.text
-#		matches = re.findall(r'data:image/png;base64,([A-Za-z0-9/+]+={0,2})', js)
-#		for m in matches:
-#			data = base64.b64decode(m)
-#			images.append({"mimetype": "image/png", "data": data})
-#
-#		return images
+	def extract_web_app_embedded_images(self):
+		if not self.ensure_web_app_js():
+			return None  # Couldn't get JS
+
+		if not self.ensure_web_app_css():
+			return None  # Couldn't get CSS
+
+		images = {}
+
+		for resource in ['web_app_js', 'web_app_css']:
+			if not self.shared_cache[resource]:
+				continue
+
+			text = self.shared_cache[resource]['data']['text']
+			matches = re.findall(r'data:(image/(?:png|jpeg|svg\+xml));base64,([A-Za-z0-9/+]+={0,2})', text)
+			for m in matches:
+				mimetype = m[0]
+				data = base64.b64decode(m[1])
+				sha256 = hashlib.sha256(data).hexdigest()
+				images[sha256] = {"mimetype": mimetype, "sha256": sha256, "data": data}
+
+		return list(images.values())
 
 	def create_bullet_token_request(self):
 		if not self.web_service_token:
@@ -345,3 +366,46 @@ class NSO_API_S3:
 
 	def get_replay_list(self):
 		return self.do_graphql_request('ReplayQuery', {})
+
+	# Used to collect data for LeanYoshi's gear seed checker at https://leanny.github.io/splat3seedchecker/.
+	def get_gear_seed_data(self):
+		# Get outfits data
+		if not (outfits_data := self.get_outfits_common_data()):
+			print("Couldn't get outfits data")
+			return None
+
+		# Get battle history list
+		if not (history_list := self.get_battle_history_list()):
+			print("Couldn't get battle history list")
+			return None
+
+		# Extract base64 player id string
+		b64_player_id = None
+		if len(groups := history_list['data']['latestBattleHistories']['historyGroupsOnlyFirst']['nodes']) and len(groups[0]['historyDetails']['nodes']):
+			b64_player_id = groups[0]['historyDetails']['nodes'][0]['player']['id']
+
+		if b64_player_id is None:
+			print("Couldn't find player_id")
+			return None
+
+		# Extract raw player id
+		player_id = base64.b64decode(b64_player_id).decode("utf-8")
+		if not (match := re.search(r':(u-[a-z0-9]{20})$', player_id)):
+			print("Couldn't extract raw player id")
+			return None
+
+		# Generate a hash of the raw player id (including "u-" prefix)
+		raw_player_id = match[1].encode("utf-8")
+		hash = nso_api.utils.murmurhash3_32(raw_player_id, 0)
+
+		# Create a "key" (obfuscated user id) by xoring the low byte
+		#  of the hash with each byte of the raw player id
+		key = bytes([(b ^ (hash & 0xFF)) for b in list(raw_player_id)])
+
+		data = {}
+		data['h'] = hash
+		data['key'] = base64.b64encode(key).decode("utf-8")
+		data['timestamp'] = int(time.time())
+		data['gear'] = outfits_data
+		return data
+
