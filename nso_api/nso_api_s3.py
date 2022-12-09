@@ -12,15 +12,15 @@ class NSO_API_S3:
 	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
 
 	GRAPHQL_QUERY_IDS = {
-		'LatestBattleHistoriesQuery':              '4f5f26e64bca394b45345a65a2f383bd',
+		'LatestBattleHistoriesQuery':              '0176a47218d830ee447e10af4a287b3f',
 		'VsHistoryDetailQuery':                    '291295ad311b99a6288fc95a5c4cb2d2',
 		'StageScheduleQuery':                      '730cd98e84f1030d3e9ac86b6f1aae13',
-		'ReplayQuery':                             '412b09ef4eb7b67c86333f70a40ff6ba',
-		'CoopHistoryDetailQuery':                  '3cc5f826a6646b85f3ae45db51bd0707',
-		'refetchableCoopHistory_coopResultQuery':  'd82a506052aef380e584c695e105f78b',
+		'ReplayQuery':                             '7ec830425971a0e0ff5b2a378455e38e',
+		'CoopHistoryDetailQuery':                  '9ade2aa3656324870ccec023636aed32',
+		'refetchableCoopHistory_coopResultQuery':  '2a7f4335bcf586d904db85e75ba868c0',
 		'StageRecordQuery':                        'f08a932d533845dde86e674e03bbb7d3',
 		'WeaponRecordQuery':                       '5f279779e7081f2d14ae1ddca0db2b6e',
-		'CoopHistoryQuery':                        '6ed02537e4a65bbb5e7f4f23092f6154',
+		'CoopHistoryQuery':                        '2fd21f270d381ecf894eb975c5f6a716',
 		'HistoryRecordQuery':                      '32b6771f94083d8f04848109b7300af5',
 		'ConfigureAnalyticsQuery':                 'f8ae00773cc412a50dd41a6d9a159ddd',
 		'MyOutfitsQuery':                          '81d9a6849467d2aa6b1603ebcedbddbe',
