@@ -35,23 +35,10 @@ def load_tokens(nso):
 	if keys:
 		nso.set_keys(keys)
 
-	if not nso.is_logged_in():
-		url = nso.get_login_challenge_url()
-		print(f"Login challenge URL: {url}")
-		input = ""
-		while not "://" in input:
-			print("Paste login URL here:")
-			input = sys.stdin.readline().rstrip()
-
-		if not nso.complete_login_challenge(input):
-			print(f"Login failed: {nso.get_error_message()}")
-			exit(1)
-
-		print("Login successful")
-
 def showUsageMessage():
 	print(f"Usage: {sys.argv[0]} <category> <command>")
 	print(f"       {sys.argv[0]} <category> --help")
+	print(f"       {sys.argv[0]} --login")
 	print("Categories are: account s2 s3")
 	return
 
@@ -110,11 +97,18 @@ def s3Command(words):
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_web_app_image_links()))
 	elif command == 'extract-web-app-embedded-images':
-		args = grabArguments(words, 0, 0, [])
+		args = grabArguments(words, 0, 1, ['directory'])
 		images = nso.s3.extract_web_app_embedded_images()
 		print("%-64s  %-6s  %s" % ('sha256', 'length', 'mimetype'))
 		for i in images:
 			print("%s  %6d  %s" % (i['sha256'], len(i['data']), i['mimetype']))
+
+		extensions = {'image/png': '.png', 'image/jpeg': '.jpeg', 'image/svg+xml': '.svg'}
+		if args.get('directory'):
+			for i in images:
+				path = f"{args['directory']}/{i['sha256']}{extensions.get(i['mimetype'], '')}"
+				with open(path, 'wb') as f:
+					f.write(i['data'])
 	elif command == 'get-splatfest-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_splatfest_list()))
@@ -203,7 +197,7 @@ def s3Command(words):
 		print("Subcommands of 's3' are:")
 		print("  get-web-app-version")
 		print("  get-web-app-image-links")
-		print("  extract-web-app-images")
+		print("  extract-web-app-embedded-images [<destination directory>]")
 		print("  get-splatfest-list")
 		print("  get-salmon-run-stats")
 		print("  get-stage-schedule")
@@ -231,8 +225,25 @@ nso.on_logged_out(handle_logged_out)
 # Load tokens into client object
 load_tokens(nso)
 
+# Handle --login first
+if (len(sys.argv) == 2) and (sys.argv[1] == "--login"):
+	url = nso.get_login_challenge_url()
+	print(f"Login challenge URL: {url}")
+	input = ""
+	while not "://" in input:
+		print("Paste login URL here:")
+		input = sys.stdin.readline().rstrip()
+
+	if nso.complete_login_challenge(input):
+		print("Login OK")
+		exit(0)
+	else:
+		print(f"Login failed: {nso.get_error_message()}")
+		exit(1)
+
+# Can't continue if not logged in
 if not nso.is_logged_in():
-	print("Not logged in. Can't continue.")
+	print("You are not logged in. Try: {sys.argv[0]} --login")
 	exit(1)
 
 if len(sys.argv) < 3:
