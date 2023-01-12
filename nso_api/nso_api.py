@@ -10,7 +10,12 @@ import inspect
 import re
 import bs4
 
+import nso_api.utils
+
+from .version import __version__
+
 from .nso_expiring_token import NSO_Expiring_Token
+from .nso_api_app import NSO_API_App
 from .nso_api_s2 import NSO_API_S2
 from .nso_api_s3 import NSO_API_S3
 from .nso_api_acnh import NSO_API_ACNH
@@ -60,9 +65,12 @@ class NSO_JSON_Response:
 		return self.payload.get('result')
 
 class NSO_API:
-	def __init__(self, app_version, f_provider, context = None):
+	FALLBACK_APP_VERSION = "2.4.0"
+
+	global_data = {}
+
+	def __init__(self, f_provider, context = None):
 		self.session = requests.Session()
-		self.app_version = app_version
 		self.f_provider = f_provider
 		self.client_id = '71b963c1b7b6d119'
 		self.callbacks = {}
@@ -74,12 +82,17 @@ class NSO_API:
 		self.user_info = None
 		self.last_activity_time = time.time()
 		self.cache = {}
+		self.app = NSO_API_App(self)
 		self.s2 = NSO_API_S2(self)
 		self.s3 = NSO_API_S3(self)
 		self.acnh = NSO_API_ACNH(self)
 		self.account = NSO_API_Account(self)
 		self.debug = int(os.environ.get('NSO_API_DEBUG', 0))
 		self.errors = []
+
+	@classmethod
+	def get_version(cls):
+		return __version__
 
 	# Given an NSO_JSON_Response object, records an error message and
 	#  returns True if it was an error.
@@ -114,6 +127,9 @@ class NSO_API:
 	def on_logged_out(self, callback):
 		self.callbacks['logged_out'] = callback
 
+	def on_global_data_update(self, callback):
+		self.callbacks['global_data_update'] = callback
+
 	def notify_keys_update(self):
 		if not self.callbacks.get('keys_update'):
 			return
@@ -123,6 +139,11 @@ class NSO_API:
 		if not self.callbacks.get('logged_out'):
 			return
 		self.callbacks['logged_out'](self, self.context)
+
+	def notify_global_data_update(self):
+		if not self.callbacks.get('global_data_update'):
+			return
+		self.callbacks['global_data_update'](self, self.global_data)
 
 	def get_keys(self):
 		keys = {}
@@ -136,6 +157,8 @@ class NSO_API:
 		return keys
 
 	def set_keys(self, keys):
+		if not isinstance(keys, dict):
+			return
 		self.session_token = keys.get('session_token')
 		self.api_tokens = NSO_Expiring_Token.from_hash(keys['api_tokens']) if keys.get('api_tokens') else None
 		self.api_login = NSO_Expiring_Token.from_hash(keys['api_login']) if keys.get('api_login') else None
@@ -143,6 +166,14 @@ class NSO_API:
 			self.s2.set_keys(keys['games'].get('s2'))
 			self.s3.set_keys(keys['games'].get('s3'))
 			self.acnh.set_keys(keys['games'].get('acnh'))
+
+	def get_global_data(self):
+		return self.global_data
+
+	def set_global_data(self, data):
+		if not isinstance(data, dict):
+			return
+		self.global_data = data
 
 	# Discards all keys except for the session_token. This should not be
 	#  needed during normal use, but can be useful for testing.
@@ -165,14 +196,11 @@ class NSO_API:
 		self.errors = []
 		return msg
 
-	def base64_encode_no_pad(self, data):
-		return base64.urlsafe_b64encode(data).replace(b"=", b"")
-
 	def generate_login_challenge(self):
 		login = {}
-		login['state'] = self.base64_encode_no_pad(os.urandom(36))
-		login['code_verifier'] = self.base64_encode_no_pad(os.urandom(32))
-		login['code_challenge'] = self.base64_encode_no_pad(hashlib.sha256(login['code_verifier']).digest())
+		login['state'] = nso_api.utils.base64_encode_no_pad(os.urandom(36))
+		login['code_verifier'] = nso_api.utils.base64_encode_no_pad(os.urandom(32))
+		login['code_challenge'] = nso_api.utils.base64_encode_no_pad(hashlib.sha256(login['code_verifier']).digest())
 		return login
 
 	# Decodes the 'npf71b963c1b7b6d119://auth#...' URL provided by Nintendo
@@ -189,7 +217,7 @@ class NSO_API:
 	#  matching our login URL and gives us the a session_token.
 	def create_session_token_request(self, session_token_code):
 		headers = {}
-		headers['User-Agent'] = f'OnlineLounge/{self.app_version} NASDKAPI Android'
+		headers['User-Agent'] = f'OnlineLounge/{self.get_app_version()} NASDKAPI Android'
 		headers['Accept-Language'] = 'en-US'
 		headers['Accept'] = 'application/json'
 		headers['Content-Type'] = 'application/x-www-form-urlencoded'
@@ -218,7 +246,7 @@ class NSO_API:
 		headers['Accept-Language'] = 'en-US'
 		headers['Accept'] = 'application/json'
 		headers['Connection'] = 'Keep-Alive'
-		headers['User-Agent'] = f'OnlineLounge/{self.app_version} NASDKAPI Android'
+		headers['User-Agent'] = f'OnlineLounge/{self.get_app_version()} NASDKAPI Android'
 
 		jsonbody = {}
 		jsonbody['client_id'] = self.client_id
@@ -233,7 +261,7 @@ class NSO_API:
 			raise Exception("No api_tokens")
 
 		headers = {}
-		headers['User-Agent'] = f'OnlineLounge/{self.app_version} NASDKAPI Android'
+		headers['User-Agent'] = f'OnlineLounge/{self.get_app_version()} NASDKAPI Android'
 		headers['Accept-Language'] = 'en-US'
 		headers['Accept'] = 'application/json'
 		headers['Authorization'] = f"Bearer {self.api_tokens.value['access_token']}"
@@ -254,9 +282,9 @@ class NSO_API:
 		headers = {}
 		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
 		headers['Accept-Language'] = 'en-US'
-		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.get_app_version()} (Android/7.1.2)'
 		headers['Accept'] = 'application/json'
-		headers['X-ProductVersion'] = self.app_version
+		headers['X-ProductVersion'] = self.get_app_version()
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Connection'] = 'Keep-Alive'
 		headers['Authorization'] = 'Bearer'
@@ -282,9 +310,9 @@ class NSO_API:
 
 		headers = {}
 		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
-		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.get_app_version()} (Android/7.1.2)'
 		headers['Accept'] = 'application/json'
-		headers['X-ProductVersion'] = self.app_version
+		headers['X-ProductVersion'] = self.get_app_version()
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Connection'] = 'Keep-Alive'
 		headers['Authorization'] = f'Bearer {self.api_login.value}'
@@ -317,12 +345,12 @@ class NSO_API:
 		guid = str(uuid.uuid4())
 
 		headers = {}
-		headers['User-Agent'] = f'com.nintendo.znca/{self.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.get_app_version()} (Android/7.1.2)'
 		headers['Accept-Encoding'] = 'gzip'
 		headers['Accept'] = 'application/json'
 		headers['Connection'] = 'Keep-Alive'
 		headers['Host'] = 'api-lp1.znc.srv.nintendo.net'
-		headers['X-ProductVersion'] = self.app_version
+		headers['X-ProductVersion'] = self.get_app_version()
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Authorization'] = f"Bearer {self.api_login.value}"
 		headers['X-Platform'] = 'Android'
@@ -445,6 +473,9 @@ class NSO_API:
 			self.errors.append('Expected session_token_code in URL')
 			return False
 
+		if not self.ensure_app_version():
+			return False
+
 		result = self.do_json_request(self.create_session_token_request(fields['session_token_code']))
 		if not result.get('session_token'):
 			self.errors.append('session_token response returned no token')
@@ -456,11 +487,43 @@ class NSO_API:
 		self.notify_keys_update()
 		return True
 
+	# Ensures we have a Nintendo app version.
+	def ensure_app_version(self):
+		if 'app_version' in self.global_data:
+			if time.time() < self.global_data['app_version']['expiretime']:
+				return True
+
+		if self.debug >= 1:
+			print("App version out of date, checking...")
+
+		version = self.app.get_version()
+		if version is None:
+			if self.debug >= 1:
+				print("  Failed to get app version")
+			return False
+
+		if self.debug >= 1:
+			print(f"  Found app version: {version}")
+
+		now = int(time.time())
+		self.global_data['app_version'] = {"retrievetime": now, "expiretime": now + (24 * 3600), "version": version}
+		self.notify_global_data_update()
+		return True
+
+	def get_app_version(self):
+		if 'app_version' in self.global_data:
+			return self.global_data['app_version']['version']
+
+		return self.FALLBACK_APP_VERSION
+
 	# Ensures we have fresh api_tokens.
 	# Returns True if successful.
 	def ensure_api_tokens(self):
 		if self.api_tokens and self.api_tokens.is_fresh():
 			return True
+
+		if not self.ensure_app_version():
+			return False
 
 		response = self.do_http_request(self.create_api_tokens_request(), expect_status = [200, 400])
 		if response is None:
@@ -549,6 +612,9 @@ class NSO_API:
 		if not self.ensure_api_login():
 			return None
 
+		if not self.ensure_app_version():
+			return False
+
 		guid = str(uuid.uuid4())
 		app_f_dict = self.f_provider.get_app_f(self.api_login.value, guid)
 		if not app_f_dict:
@@ -562,7 +628,6 @@ class NSO_API:
 			self.errors.append("Unexpected response getting web service token")
 			return None
 
-		#print(web_service_token_response)
 		return NSO_Expiring_Token(web_service_token_response['result']['accessToken'], duration = web_service_token_response['result']['expiresIn'])
 
 	# Returns friend code if known.

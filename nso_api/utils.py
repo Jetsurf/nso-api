@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import base64
 
 # Murmurhash3 (https://en.wikipedia.org/wiki/MurmurHash#Algorithm)
 def murmurhash3_32(bytes, seed):
@@ -44,3 +45,7 @@ def murmurhash3_32(bytes, seed):
 	hash ^= (hash >> 16)
 
 	return hash
+
+# Base64 encoding with no trailing padding
+def base64_encode_no_pad(data):
+	return base64.urlsafe_b64encode(data).rstrip("=")

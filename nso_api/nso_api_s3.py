@@ -13,6 +13,9 @@ class NSO_API_S3:
 
 	GRAPHQL_QUERY_IDS = {
 		'LatestBattleHistoriesQuery':              '0176a47218d830ee447e10af4a287b3f',
+		'RegularBattleHistoriesQuery':             '3baef04b095ad8975ea679d722bc17de',
+		'BankaraBattleHistoriesQuery':             '0438ea6978ae8bd77c5d1250f4f84803',
+		'PrivateBattleHistoriesQuery':             '8e5ae78b194264a6c230e262d069bd28',
 		'VsHistoryDetailQuery':                    '291295ad311b99a6288fc95a5c4cb2d2',
 		'StageScheduleQuery':                      '730cd98e84f1030d3e9ac86b6f1aae13',
 		'ReplayQuery':                             '7ec830425971a0e0ff5b2a378455e38e',
@@ -218,7 +221,7 @@ class NSO_API_S3:
 
 		headers = {}
 		headers['Host'] = self.hostname
-		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.get_app_version()} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['X-Platform'] = 'Android'
 		headers['X-Web-View-Ver'] = self.get_web_app_version_string()
@@ -239,7 +242,7 @@ class NSO_API_S3:
 
 		headers = {}
 		headers['Host'] = self.hostname
-		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.get_app_version()} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['X-Web-View-Ver'] = self.get_web_app_version_string()
 		headers['Accept-Language'] = 'en-US'

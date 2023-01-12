@@ -37,10 +37,10 @@ class NSO_API_ACNH:
 
 		headers = {}
 		headers['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
-		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.get_app_version()} (Android/7.1.2)'
 		headers['X-Platform'] = 'Android'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
-		headers['X-ProductVersion'] = self.nso_api.app_version
+		headers['X-ProductVersion'] = self.nso_api.get_app_version()
 		headers['x-gamewebtoken'] = self.web_service_token.value
 		headers['x-isappanalyticsoptedin'] = 'false'
 		headers['DNT'] = '0'
@@ -61,7 +61,7 @@ class NSO_API_ACNH:
 		headers = {}
 		headers['Host'] = 'web.sd.lp1.acbaa.srv.nintendo.net'
 		headers['Accept'] = 'application/json, text/plain, */*'
-		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.get_app_version()} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['X-Blanco-Version'] = '2.1.0'
 		headers['Referer'] = 'https://web.sd.lp1.acbaa.srv.nintendo.net/?lang=en-US&na_country=US&na_lang=en-US'

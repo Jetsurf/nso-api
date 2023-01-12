@@ -23,23 +23,30 @@ def save_json_file(filename, keys):
 def handle_keys_update(nso, context):
 	save_json_file("nso_tokens.json", nso.get_keys())
 
+def handle_global_data_update(nso, data):
+	save_json_file("nso_global_data.json", data)
+
 # The NSO client object will trigger this callback when it detects that the
 #  account is logged out.
 def handle_logged_out(nso, context):
 	print(f"Client for context '{context}' was logged out.")
 
-# This function loads our existing tokens (if any) from the file and performs
-#  the setup process if needed.
+# This function loads our existing tokens (if any) from the token file.
 def load_tokens(nso):
 	keys = load_json_file("nso_tokens.json")
 	if keys:
 		nso.set_keys(keys)
 
+def load_global_data(nso):
+	data = load_json_file("nso_global_data.json")
+	if data:
+		nso.set_global_data(data)
+
 def showUsageMessage():
 	print(f"Usage: {sys.argv[0]} <category> <command>")
 	print(f"       {sys.argv[0]} <category> --help")
 	print(f"       {sys.argv[0]} --login")
-	print("Categories are: account s2 s3")
+	print("Categories are: app account s2 s3")
 	return
 
 def grabArguments(args, min, max, names):
@@ -57,9 +64,32 @@ def grabArguments(args, min, max, names):
 		print(f"Usage: {sys.argv[0]} {sys.argv[1]} {sys.argv[2]} {arglist}")
 		exit(1)
 
+def appCommand(words):
+	command = words.pop(0)
+	if command == 'get-version':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.app.get_version()))
+	elif command == '--help':
+		print("Subcommands of 'app' are:")
+		print("  get-version")
+	else:
+		print(f"Unknown app command '{command}'. Try '--help' for help.")
+
 def accountCommand(words):
 	command = words.pop(0)
-	if command == 'get-user-by-friend-code':
+	if command == 'list-web-services':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.account.list_web_services()))
+	elif command == 'get-friends-list':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.account.get_friends_list()))
+	elif command == 'create-friend-code-url':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.account.create_friend_code_url()))
+	elif command == 'get-user-self':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.account.get_user_self()))
+	elif command == 'get-user-by-friend-code':
 		args = grabArguments(words, 1, 1, ['friendcode'])
 		print(json.dumps(nso.account.get_user_by_friend_code(args['friendcode'])))
 	elif command == 'add-friend-by-friend-code':
@@ -72,6 +102,10 @@ def accountCommand(words):
 		print(json.dumps(nso.account.send_friend_request(user)))
 	elif command == '--help':
 		print("Subcommands of 'account' are:")
+		print("  list-web-services")
+		print("  get-friends-list")
+		print("  create-friend-code-url")
+		print("  get-user-self")
 		print("  get-user-by-friend-code <code>")
 		print("  add-friend-by-friend-code <code>")
 	else:
@@ -214,36 +248,43 @@ def s3Command(words):
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
-imink = IMink("nso-cli.py 1.0 (discord=jetsurf#8514)")
-nso_app_version = "2.4.0"
+imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
 
 # Create NSO client object
-nso = NSO_API(nso_app_version, imink)
+nso = NSO_API(imink)
 nso.on_keys_update(handle_keys_update)
+nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
 
 # Load tokens into client object
 load_tokens(nso)
 
-# Handle --login first
-if (len(sys.argv) == 2) and (sys.argv[1] == "--login"):
-	url = nso.get_login_challenge_url()
-	print(f"Login challenge URL: {url}")
-	input = ""
-	while not "://" in input:
-		print("Paste login URL here:")
-		input = sys.stdin.readline().rstrip()
+# Handle single-arg possibilities first
+if (len(sys.argv) == 2):
+	if sys.argv[1] == "--login":
+		url = nso.get_login_challenge_url()
+		print(f"Login challenge URL: {url}")
+		input = ""
+		while not "://" in input:
+			print("Paste login URL here:")
+			input = sys.stdin.readline().rstrip()
 
-	if nso.complete_login_challenge(input):
-		print("Login OK")
+		if nso.complete_login_challenge(input):
+			print("Login OK")
+			exit(0)
+		else:
+			print(f"Login failed: {nso.get_error_message()}")
+			exit(1)
+	elif sys.argv[1] == '--version':
+		print(f"NSO-API version: {nso.get_version()}")
 		exit(0)
 	else:
-		print(f"Login failed: {nso.get_error_message()}")
+		showUsageMessage()
 		exit(1)
 
 # Can't continue if not logged in
 if not nso.is_logged_in():
-	print("You are not logged in. Try: {sys.argv[0]} --login")
+	print(f"You are not logged in. Try: {sys.argv[0]} --login")
 	exit(1)
 
 if len(sys.argv) < 3:
@@ -251,7 +292,9 @@ if len(sys.argv) < 3:
 	exit(1)
 
 category = sys.argv[1]
-if category == 'account':
+if category == 'app':
+	appCommand(sys.argv[2:])
+elif category == 'account':
 	accountCommand(sys.argv[2:])
 elif category == 's2':
 	s2Command(sys.argv[2:])

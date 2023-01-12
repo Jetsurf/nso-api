@@ -32,10 +32,10 @@ class NSO_API_S2:
 
 		headers = {}
 		headers['Host'] = 'app.splatoon2.nintendo.net'
-		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.app_version} (Android/7.1.2)'
+		headers['User-Agent'] = f'com.nintendo.znca/{self.nso_api.get_app_version()} (Android/7.1.2)'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['X-Platform'] = 'Android'
-		headers['X-ProductVersion'] = self.nso_api.app_version
+		headers['X-ProductVersion'] = self.nso_api.get_app_version()
 		headers['x-gamewebtoken'] = self.web_service_token.value
 		headers['x-isappanalyticsoptedin'] = 'false'
 		headers['X-Requested-With'] = 'com.nintendo.znca'

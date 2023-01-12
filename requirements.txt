@@ -1,2 +1,3 @@
 requests
+itunes-app-scraper-dmi
 
