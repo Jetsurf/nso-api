@@ -156,6 +156,7 @@ class NSO_API:
 		keys['games']['acnh'] = self.acnh.get_keys()
 		return keys
 
+	# TODO: Rename to load_user_data
 	def set_keys(self, keys):
 		if not isinstance(keys, dict):
 			return
@@ -170,10 +171,29 @@ class NSO_API:
 	def get_global_data(self):
 		return self.global_data
 
-	def set_global_data(self, data):
+	def load_global_data(self, data):
 		if not isinstance(data, dict):
 			return
 		self.global_data = data
+
+	def get_global_data_value(self, path):
+		container = self.global_data
+		parts = path.split(".")
+		for p in range(len(parts) - 1):
+			if not parts[p] in container:
+				return None
+			container = container[parts[p]]
+		return container.get(parts[-1])
+
+	def set_global_data_value(self, path, value):
+		container = self.global_data
+		parts = path.split(".")
+		for p in range(len(parts) - 1):
+			if not parts[p] in container:
+				container[parts[p]] = {}
+			container = container[parts[p]]
+		container[parts[-1]] = value
+		self.notify_global_data_update()
 
 	# Discards all keys except for the session_token. This should not be
 	#  needed during normal use, but can be useful for testing.
@@ -489,8 +509,9 @@ class NSO_API:
 
 	# Ensures we have a Nintendo app version.
 	def ensure_app_version(self):
-		if 'app_version' in self.global_data:
-			if time.time() < self.global_data['app_version']['expiretime']:
+		app_version = self.get_global_data_value("app_version")
+		if app_version is not None:
+			if time.time() < app_version['expiretime']:
 				return True
 
 		if self.debug >= 1:
@@ -499,20 +520,24 @@ class NSO_API:
 		version = self.app.get_version()
 		if version is None:
 			if self.debug >= 1:
-				print("  Failed to get app version")
+				print(f"  Failed to get app version, using fallback version {self.FALLBACK_APP_VERSION}")
+			now = int(time.time())
+			expiretime = now + 3600
+			self.set_global_data_value("app_version", {"retrievetime": now, "expiretime": expiretime, "data": {"version": self.FALLBACK_APP_VERSION, "fallback": True}})
 			return False
 
 		if self.debug >= 1:
 			print(f"  Found app version: {version}")
 
 		now = int(time.time())
-		self.global_data['app_version'] = {"retrievetime": now, "expiretime": now + (24 * 3600), "version": version}
-		self.notify_global_data_update()
+		expiretime = now + (24 * 3600)
+		self.set_global_data_value("app_version", {"retrievetime": now, "expiretime": expiretime, "data": {"version": version}})
 		return True
 
 	def get_app_version(self):
-		if 'app_version' in self.global_data:
-			return self.global_data['app_version']['version']
+		app_version = self.get_global_data_value("app_version")
+		if app_version is not None:
+			return app_version['data']['version']
 
 		return self.FALLBACK_APP_VERSION
 

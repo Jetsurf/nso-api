@@ -40,7 +40,7 @@ def load_tokens(nso):
 def load_global_data(nso):
 	data = load_json_file("nso_global_data.json")
 	if data:
-		nso.set_global_data(data)
+		nso.load_global_data(data)
 
 def showUsageMessage():
 	print(f"Usage: {sys.argv[0]} <category> <command>")
@@ -258,6 +258,7 @@ nso.on_logged_out(handle_logged_out)
 
 # Load tokens into client object
 load_tokens(nso)
+load_global_data(nso)
 
 # Handle single-arg possibilities first
 if (len(sys.argv) == 2):
