@@ -82,7 +82,7 @@ class NSO_API_ACNH:
 			return False
 
 		self.web_service_token = web_service_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	def ensure_g_token(self):
@@ -106,7 +106,7 @@ class NSO_API_ACNH:
 			return False
 
 		self.g_token = g_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	# Gets park_session and ac_bearer tokens.
@@ -139,7 +139,7 @@ class NSO_API_ACNH:
 
 		self.park_session = park_session
 		self.ac_bearer = ac_bearer
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	# Ensures we have the "users" data cached.

@@ -9,7 +9,7 @@ from .nso_expiring_token import NSO_Expiring_Token
 import nso_api.utils
 
 class NSO_API_S3:
-	FALLBACK_VERSION = {"version": "2.0.0", "revision": "8a061f6c34f6149b4775a13262f9e059fda92a31"}
+	FALLBACK_VERSION = {"version": "2.0.0", "revision": "7070f95eeb38aede609918be39948d3dde92395f"}
 
 	GRAPHQL_QUERY_IDS = {
 		'LatestBattleHistoriesQuery':              '0176a47218d830ee447e10af4a287b3f',
@@ -17,13 +17,13 @@ class NSO_API_S3:
 		'BankaraBattleHistoriesQuery':             '0438ea6978ae8bd77c5d1250f4f84803',
 		'PrivateBattleHistoriesQuery':             '8e5ae78b194264a6c230e262d069bd28',
 		'VsHistoryDetailQuery':                    '291295ad311b99a6288fc95a5c4cb2d2',
-		'StageScheduleQuery':                      '730cd98e84f1030d3e9ac86b6f1aae13',
-		'ReplayQuery':                             '7ec830425971a0e0ff5b2a378455e38e',
+		'StageScheduleQuery':                      'df9738cb0fbd533a888feaf21f1e2b14',
+		'ReplayQuery':                             'e9cbaa835977b6c6de77ca7a4be15b24',
 		'CoopHistoryDetailQuery':                  '9ade2aa3656324870ccec023636aed32',
-		'refetchableCoopHistory_coopResultQuery':  '2a7f4335bcf586d904db85e75ba868c0',
+		'refetchableCoopHistory_coopResultQuery':  '6e8711fa8bb803581b97519ade4ef0a3',
 		'StageRecordQuery':                        'f08a932d533845dde86e674e03bbb7d3',
 		'WeaponRecordQuery':                       '5f279779e7081f2d14ae1ddca0db2b6e',
-		'CoopHistoryQuery':                        '2fd21f270d381ecf894eb975c5f6a716',
+		'CoopHistoryQuery':                        '7edc52165b95dcb2b8a1c14c31e1d5b1',
 		'HistoryRecordQuery':                      '32b6771f94083d8f04848109b7300af5',
 		'ConfigureAnalyticsQuery':                 'f8ae00773cc412a50dd41a6d9a159ddd',
 		'MyOutfitsQuery':                          '81d9a6849467d2aa6b1603ebcedbddbe',
@@ -37,7 +37,7 @@ class NSO_API_S3:
 		'useCurrentFestQuery':                     'c0429fd738d829445e994d3370999764',
 	}
 
-	shared_cache = {}
+	shared_cache = {}  # Cached in memory for process lifetime only
 
 	def __init__(self, nso_api):
 		self.nso_api = nso_api
@@ -99,13 +99,14 @@ class NSO_API_S3:
 			return False
 
 		# Save to shared cache
-		now = time.time()
+		now = int(time.time())
 		self.shared_cache[cache_key] = {"retrievetime": now, "expiretime": now + (6 * 3600), "data": {"url": url, "text": res.text}}
 		return True
 
 	def ensure_web_app_urls(self):
-		if 'web_app_urls' in self.shared_cache:
-			if time.time() < self.shared_cache['web_app_urls']['expiretime']:
+		web_app_urls = self.nso_api.get_global_data_value("s3.web_app_urls")
+		if web_app_urls is not None:
+			if time.time() < web_app_urls['expiretime']:
 				return True
 
 		urls = self.get_web_app_urls()
@@ -113,7 +114,7 @@ class NSO_API_S3:
 			return False
 
 		now = int(time.time())
-		self.shared_cache['web_app_urls'] = {"retrievetime": now, "expiretime": now + (6 * 3600), "urls": urls}
+		self.nso_api.set_global_data_value("s3.web_app_urls", {"retrievetime": now, "expiretime": now + (6 * 3600), "data": urls})
 		return True
 
 	def ensure_web_app_js(self):
@@ -124,7 +125,9 @@ class NSO_API_S3:
 		if not self.ensure_web_app_urls():
 			return False
 
-		return self.cache_web_app_resource('web_app_js', self.shared_cache['web_app_urls']['urls']['js'])
+		web_app_urls = self.nso_api.get_global_data_value("s3.web_app_urls")
+
+		return self.cache_web_app_resource('web_app_js', web_app_urls['data']['js'])
 
 	def ensure_web_app_css(self, css_url = None):
 		if 'web_app_css' in self.shared_cache:
@@ -134,7 +137,9 @@ class NSO_API_S3:
 		if not self.ensure_web_app_urls():
 			return False
 
-		return self.cache_web_app_resource('web_app_css', self.shared_cache['web_app_urls']['urls']['css'])
+		web_app_urls = self.nso_api.get_global_data_value("s3.web_app_urls")
+
+		return self.cache_web_app_resource('web_app_css', web_app_urls['data']['css'])
 
 	def cache_web_app_version(self):
 		if not self.ensure_web_app_js():
@@ -150,31 +155,36 @@ class NSO_API_S3:
 			return False
 
 		# Save to shared cache
-		now = time.time()
-		self.shared_cache['web_app_version'] =  {"retrievetime": now, "expiretime": self.shared_cache['web_app_js']['expiretime'], "data": {"url": self.shared_cache['web_app_js']['data']['url'], "version": match[4], "revision": match[2]}}
+		now = int(time.time())
+		expiretime = self.shared_cache['web_app_js']['expiretime']
+		data = {"url": self.shared_cache['web_app_js']['data']['url'], "version": match[4], "revision": match[2]}
+		self.nso_api.set_global_data_value("s3.web_app_version", {"retrievetime": now, "expiretime": expiretime, "data": data})
 		return True
 
 	# If we can't obtain the web app version automatically, as a fallback we can use the last-known version
 	def cache_web_app_fallback_version(self):
-		now = time.time()
+		now = int(time.time())
 		expiretime = now + (30 * 60)  # 30 minutes
-		self.shared_cache['web_app_version'] = {"retrievetime": now, "expiretime": expiretime, "data": {"version": self.FALLBACK_VERSION['version'], "revision": self.FALLBACK_VERSION['revision'], "fallback": True}}
+		data = {"version": self.FALLBACK_VERSION['version'], "revision": self.FALLBACK_VERSION['revision'], "fallback": True}
+		self.nso_api.set_global_data_value("s3.web_app_version", {"retrievetime": now, "expiretime": expiretime, "data": data})
 
 	def ensure_web_app_version(self):
-		if 'web_app_version' in self.shared_cache:
-			if time.time() < self.shared_cache['web_app_version']['expiretime']:
+		web_app_version = self.nso_api.get_global_data_value("s3.web_app_version")
+		if web_app_version is not None:
+			if time.time() < web_app_version['expiretime']:
 				return True
 
 		return self.cache_web_app_version()
 
 	def get_web_app_version(self):
 		self.ensure_web_app_version()
-		return self.shared_cache['web_app_version']['data']
+		web_app_version = self.nso_api.get_global_data_value("s3.web_app_version")
+		return web_app_version['data']
 
 	def get_web_app_version_string(self):
 		self.ensure_web_app_version()
-
-		return f"{self.shared_cache['web_app_version']['data']['version']}-{self.shared_cache['web_app_version']['data']['revision'][0:8]}"
+		web_app_version = self.nso_api.get_global_data_value("s3.web_app_version")
+		return f"{web_app_version['data']['version']}-{web_app_version['data']['revision'][0:8]}"
 
 	def get_web_app_image_links(self):
 		if not self.ensure_web_app_js():
@@ -268,7 +278,7 @@ class NSO_API_S3:
 			return False
 
 		self.web_service_token = web_service_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	def ensure_bullet_token(self):
@@ -293,7 +303,7 @@ class NSO_API_S3:
 		bullet_token = NSO_Expiring_Token(response['bulletToken'], duration = duration)
 
 		self.bullet_token = bullet_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	def do_graphql_request(self, query, variables):

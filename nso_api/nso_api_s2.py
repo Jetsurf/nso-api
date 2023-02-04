@@ -53,7 +53,7 @@ class NSO_API_S2:
 			return False
 
 		self.web_service_token = web_service_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	# Gets the iksm_session_token. This is actually an HTTP cookie.
@@ -82,7 +82,7 @@ class NSO_API_S2:
 
 		self.xid = xid
 		self.iksm_session_token = iksm_session_token
-		self.nso_api.notify_keys_update()
+		self.nso_api.notify_user_data_update()
 		return True
 
 	def get_player_json(self, url, referer = None):

@@ -121,31 +121,31 @@ class NSO_API:
 	def set_session_token(self, session_token):
 		self.session_token = session_token
 
-	def on_keys_update(self, callback):
-		self.callbacks['keys_update'] = callback
-
 	def on_logged_out(self, callback):
 		self.callbacks['logged_out'] = callback
 
+	def on_user_data_update(self, callback):
+		self.callbacks['user_data_update'] = callback
+
 	def on_global_data_update(self, callback):
 		self.callbacks['global_data_update'] = callback
-
-	def notify_keys_update(self):
-		if not self.callbacks.get('keys_update'):
-			return
-		self.callbacks['keys_update'](self, self.context)
 
 	def notify_logged_out(self):
 		if not self.callbacks.get('logged_out'):
 			return
 		self.callbacks['logged_out'](self, self.context)
 
+	def notify_user_data_update(self):
+		if not self.callbacks.get('user_data_update'):
+			return
+		self.callbacks['user_data_update'](self, self.context)
+
 	def notify_global_data_update(self):
 		if not self.callbacks.get('global_data_update'):
 			return
-		self.callbacks['global_data_update'](self, self.global_data)
+		self.callbacks['global_data_update'](self.global_data)
 
-	def get_keys(self):
+	def get_user_data(self):
 		keys = {}
 		keys['session_token'] = self.session_token
 		keys['api_tokens'] = self.api_tokens.to_hash() if self.api_tokens else None
@@ -156,8 +156,7 @@ class NSO_API:
 		keys['games']['acnh'] = self.acnh.get_keys()
 		return keys
 
-	# TODO: Rename to load_user_data
-	def set_keys(self, keys):
+	def load_user_data(self, keys):
 		if not isinstance(keys, dict):
 			return
 		self.session_token = keys.get('session_token')
@@ -203,7 +202,7 @@ class NSO_API:
 		self.s2.set_keys({})
 		self.s3.set_keys({})
 		self.acnh.set_keys({})
-		self.notify_keys_update()
+		self.notify_user_data_update()
 		return
 
 	def has_error(self):
@@ -504,7 +503,7 @@ class NSO_API:
 		self.login = None  # Login complete, so delete login challenge data
 
 		self.session_token = result['session_token']
-		self.notify_keys_update()
+		self.user_data_update()
 		return True
 
 	# Ensures we have a Nintendo app version.
@@ -565,7 +564,7 @@ class NSO_API:
 				self.errors.append(f"Client is logged out")
 				self.notify_logged_out()
 				self.session_token = None
-				self.notify_keys_update()
+				self.notify_user_data_update()
 				return False
 
 			self.errors.append(f"Request for api_tokens gave status code {response.status_code}")
@@ -574,7 +573,7 @@ class NSO_API:
 		result = json.loads(response.text)
 
 		self.api_tokens = NSO_Expiring_Token(result, duration = result['expires_in'])
-		self.notify_keys_update()
+		self.notify_user_data_update()
 		return True
 
 	# Ensures we have user_info.
@@ -628,7 +627,7 @@ class NSO_API:
 
 		wasc = api_login_response['result']['webApiServerCredential']
 		self.api_login = NSO_Expiring_Token(wasc['accessToken'], duration = wasc['expiresIn'])
-		self.notify_keys_update()
+		self.notify_user_data_update()
 		return True
 
 	# Gets the web_service_token for a specific game id.

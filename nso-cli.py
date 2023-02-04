@@ -20,10 +20,10 @@ def save_json_file(filename, keys):
 		json.dump(keys, f)
 
 # The NSO client object will trigger this callback when the tokens change.
-def handle_keys_update(nso, context):
-	save_json_file("nso_tokens.json", nso.get_keys())
+def handle_user_data_update(nso, context):
+	save_json_file("nso_tokens.json", nso.get_user_data())
 
-def handle_global_data_update(nso, data):
+def handle_global_data_update(data):
 	save_json_file("nso_global_data.json", data)
 
 # The NSO client object will trigger this callback when it detects that the
@@ -35,7 +35,7 @@ def handle_logged_out(nso, context):
 def load_tokens(nso):
 	keys = load_json_file("nso_tokens.json")
 	if keys:
-		nso.set_keys(keys)
+		nso.load_user_data(keys)
 
 def load_global_data(nso):
 	data = load_json_file("nso_global_data.json")
@@ -252,7 +252,7 @@ imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
 
 # Create NSO client object
 nso = NSO_API(imink)
-nso.on_keys_update(handle_keys_update)
+nso.on_user_data_update(handle_user_data_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
 
