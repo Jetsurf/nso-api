@@ -503,7 +503,7 @@ class NSO_API:
 		self.login = None  # Login complete, so delete login challenge data
 
 		self.session_token = result['session_token']
-		self.user_data_update()
+		self.notify_user_data_update()
 		return True
 
 	# Ensures we have a Nintendo app version.
