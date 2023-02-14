@@ -48,4 +48,4 @@ def murmurhash3_32(bytes, seed):
 
 # Base64 encoding with no trailing padding
 def base64_encode_no_pad(data):
-	return base64.urlsafe_b64encode(data).rstrip("=")
+	return base64.urlsafe_b64encode(data).rstrip(b"=")
