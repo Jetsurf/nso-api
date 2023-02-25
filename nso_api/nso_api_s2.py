@@ -163,13 +163,18 @@ class NSO_API_S2:
 		return self.get_player_json("https://app.splatoon2.nintendo.net/api/coop_results", "https://app.splatoon2.nintendo.net/coop")
 
 	def get_all_battles(self):
-		return self.get_player_json("https://app.splatoon2.nintendo.net/api/results")	
+		return self.get_player_json("https://app.splatoon2.nintendo.net/api/results")
 
 	def get_full_battle(self, battleid):
 		return self.get_player_json(f"https://app.splatoon2.nintendo.net/api/results/{battleid}")
 
+	def get_store_merchandise(self):
+		return self.get_store_json()
+
+	# Backwards compatibility
 	def get_store_merchendise(self):
-		return self.get_store_json("https://app.splatoon2.nintendo.net/api/onlineshop/merchandises")
+		print("nso_api_s2: Please call 'get_store_merchandise', not 'get_store_merchendise'")
+		return self.get_store_merchandise()
 
 	def post_store_purchase(self, merchid, confirmation=False):
 		return self.post_store_json(merchid, confirmation)
