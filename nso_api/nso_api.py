@@ -167,9 +167,11 @@ class NSO_API:
 			self.s3.set_keys(keys['games'].get('s3'))
 			self.acnh.set_keys(keys['games'].get('acnh'))
 
+	@classmethod
 	def get_global_data(self):
 		return self.global_data
 
+	@classmethod
 	def load_global_data(self, data):
 		if not isinstance(data, dict):
 			return
@@ -514,7 +516,7 @@ class NSO_API:
 				print(f"App version: Cached data: {repr(app_version)}")
 			if time.time() < app_version['expiretime']:
 				if self.debug & 0x04:
-					print(f"App version: Cached version still fresh: {app_version}")
+					print(f"App version: Cached version still fresh.")
 				return True
 
 		if self.debug & 0x04:
