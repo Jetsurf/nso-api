@@ -69,7 +69,7 @@ class NSO_API:
 
 	global_data = {}
 
-	def __init__(self, f_provider, context = None):
+	def __init__(self, f_provider, context = None, debug = 0):
 		self.session = requests.Session()
 		self.f_provider = f_provider
 		self.client_id = '71b963c1b7b6d119'
@@ -87,7 +87,7 @@ class NSO_API:
 		self.s3 = NSO_API_S3(self)
 		self.acnh = NSO_API_ACNH(self)
 		self.account = NSO_API_Account(self)
-		self.debug = int(os.environ.get('NSO_API_DEBUG', 0))
+		self.debug = max(int(os.environ.get('NSO_API_DEBUG', 0)), debug)
 		self.errors = []
 
 	@classmethod
@@ -406,17 +406,17 @@ class NSO_API:
 
 		prep_req = self.session.prepare_request(req)
 
-		if self.debug >= 2:
+		if self.debug & 0x02:
 			self.dump_http_message(prep_req)
-		elif self.debug >= 1:
+		elif self.debug & 0x01:
 			print(f">> {prep_req.method} {prep_req.url}")
 
 		self.last_activity_time = time.time()
 		res = self.session.send(prep_req)
 
-		if self.debug >= 2:
+		if self.debug & 0x02:
 			self.dump_http_message(res)
-		elif self.debug >= 1:
+		elif self.debug & 0x01:
 			print(f"<< {res.status_code} {res.reason}")
 
 		if not res.status_code in expect_status:
@@ -510,22 +510,26 @@ class NSO_API:
 	def ensure_app_version(self):
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
+			if self.debug & 0x04:
+				print(f"App version: Cached data: {repr(app_version)}")
 			if time.time() < app_version['expiretime']:
+				if self.debug & 0x04:
+					print(f"App version: Cached version still fresh: {app_version}")
 				return True
 
-		if self.debug >= 1:
-			print("App version out of date, checking...")
+		if self.debug & 0x04:
+			print("App version: Cached version out of date, checking...")
 
 		version = self.app.get_version()
 		if version is None:
-			if self.debug >= 1:
+			if self.debug & 0x04:
 				print(f"  Failed to get app version, using fallback version {self.FALLBACK_APP_VERSION}")
 			now = int(time.time())
 			expiretime = now + 3600
 			self.set_global_data_value("app_version", {"retrievetime": now, "expiretime": expiretime, "data": {"version": self.FALLBACK_APP_VERSION, "fallback": True}})
 			return False
 
-		if self.debug >= 1:
+		if self.debug & 0x04:
 			print(f"  Found app version: {version}")
 
 		now = int(time.time())
@@ -536,8 +540,12 @@ class NSO_API:
 	def get_app_version(self):
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
+			if self.debug & 0x04:
+				print(f"App version: Using cached version '{app_version['data']['version']}'")
 			return app_version['data']['version']
 
+		if self.debug & 0x04:
+			print(f"App version: Using fallback version '{self.FALLBACK_APP_VERSION}'")
 		return self.FALLBACK_APP_VERSION
 
 	# Ensures we have fresh api_tokens.
