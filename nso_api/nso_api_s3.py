@@ -9,7 +9,7 @@ from .nso_expiring_token import NSO_Expiring_Token
 import nso_api.utils
 
 class NSO_API_S3:
-	FALLBACK_VERSION = {"version": "2.0.0", "revision": "7070f95eeb38aede609918be39948d3dde92395f"}
+	FALLBACK_VERSION = {"version": "3.0.0", "revision": "2857bc50653d316cb69f017b2eef24d2ae56a1b7"}
 
 	GRAPHQL_QUERY_IDS = {
 		'LatestBattleHistoriesQuery':              '0176a47218d830ee447e10af4a287b3f',
@@ -17,14 +17,14 @@ class NSO_API_S3:
 		'BankaraBattleHistoriesQuery':             '0438ea6978ae8bd77c5d1250f4f84803',
 		'PrivateBattleHistoriesQuery':             '8e5ae78b194264a6c230e262d069bd28',
 		'VsHistoryDetailQuery':                    '291295ad311b99a6288fc95a5c4cb2d2',
-		'StageScheduleQuery':                      'df9738cb0fbd533a888feaf21f1e2b14',
+		'StageScheduleQuery':                      '011e394c0e384d77a0701474c8c11a20',
 		'ReplayQuery':                             'e9cbaa835977b6c6de77ca7a4be15b24',
-		'CoopHistoryDetailQuery':                  '9ade2aa3656324870ccec023636aed32',
-		'refetchableCoopHistory_coopResultQuery':  '6e8711fa8bb803581b97519ade4ef0a3',
+		'CoopHistoryDetailQuery':                  '379f0d9b78b531be53044bcac031b34b',
+		'refetchableCoopHistory_coopResultQuery':  '50be9b694c7c6b99b7a383e494ec5258',
 		'StageRecordQuery':                        'f08a932d533845dde86e674e03bbb7d3',
 		'WeaponRecordQuery':                       '5f279779e7081f2d14ae1ddca0db2b6e',
-		'CoopHistoryQuery':                        '7edc52165b95dcb2b8a1c14c31e1d5b1',
-		'HistoryRecordQuery':                      '32b6771f94083d8f04848109b7300af5',
+		'CoopHistoryQuery':                        '91b917becd2fa415890f5b47e15ffb15',
+		'HistoryRecordQuery':                      'f09da9d24d888797fdfb2f060dbdf4ed',
 		'ConfigureAnalyticsQuery':                 'f8ae00773cc412a50dd41a6d9a159ddd',
 		'MyOutfitsQuery':                          '81d9a6849467d2aa6b1603ebcedbddbe',
 		'BattleHistoryCurrentPlayerQuery':         '49dd00428fb8e9b4dde62f585c8de1e0',
@@ -319,6 +319,9 @@ class NSO_API_S3:
 
 		response = self.nso_api.do_json_request(self.create_graphql_request(query_hash, variables))
 		return response
+
+	def get_tw_history_list(self):
+		return self.do_graphql_request('RegularBattleHistoriesQuery', {})
 
 	def get_battle_history_list(self):
 		return self.do_graphql_request('LatestBattleHistoriesQuery', {})
