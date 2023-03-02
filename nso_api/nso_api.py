@@ -68,6 +68,7 @@ class NSO_API:
 	FALLBACK_APP_VERSION = "2.5.0"
 
 	global_data = {}
+	global_callbacks = {}
 
 	def __init__(self, f_provider, context = None, debug = 0):
 		self.session = requests.Session()
@@ -127,8 +128,9 @@ class NSO_API:
 	def on_user_data_update(self, callback):
 		self.callbacks['user_data_update'] = callback
 
-	def on_global_data_update(self, callback):
-		self.callbacks['global_data_update'] = callback
+	@classmethod
+	def on_global_data_update(cls, callback):
+		cls.global_callbacks['global_data_update'] = callback
 
 	def notify_logged_out(self):
 		if not self.callbacks.get('logged_out'):
@@ -140,10 +142,11 @@ class NSO_API:
 			return
 		self.callbacks['user_data_update'](self, self.context)
 
-	def notify_global_data_update(self):
-		if not self.callbacks.get('global_data_update'):
+	@classmethod
+	def notify_global_data_update(cls):
+		if not cls.global_callbacks.get('global_data_update'):
 			return
-		self.callbacks['global_data_update'](self.global_data)
+		cls.global_callbacks['global_data_update'](cls.global_data)
 
 	def get_user_data(self):
 		keys = {}
@@ -168,17 +171,18 @@ class NSO_API:
 			self.acnh.set_keys(keys['games'].get('acnh'))
 
 	@classmethod
-	def get_global_data(self):
-		return self.global_data
+	def get_global_data(cls):
+		return cls.global_data
 
 	@classmethod
-	def load_global_data(self, data):
+	def load_global_data(cls, data):
 		if not isinstance(data, dict):
 			return
-		self.global_data = data
+		cls.global_data = data
 
-	def get_global_data_value(self, path):
-		container = self.global_data
+	@classmethod
+	def get_global_data_value(cls, path):
+		container = cls.global_data
 		parts = path.split(".")
 		for p in range(len(parts) - 1):
 			if not parts[p] in container:
@@ -186,15 +190,16 @@ class NSO_API:
 			container = container[parts[p]]
 		return container.get(parts[-1])
 
-	def set_global_data_value(self, path, value):
-		container = self.global_data
+	@classmethod
+	def set_global_data_value(cls, path, value):
+		container = cls.global_data
 		parts = path.split(".")
 		for p in range(len(parts) - 1):
 			if not parts[p] in container:
 				container[parts[p]] = {}
 			container = container[parts[p]]
 		container[parts[-1]] = value
-		self.notify_global_data_update()
+		cls.notify_global_data_update()
 
 	# Discards all keys except for the session_token. This should not be
 	#  needed during normal use, but can be useful for testing.
