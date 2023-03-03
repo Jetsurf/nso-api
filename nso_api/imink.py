@@ -33,7 +33,7 @@ class IMink:
 			print(f'Unexpected HTTP code {res.status_code} from imink f')
 			return None
 
-		print(f"nso-api: iMink: {res.text}")
+		#print(f"nso-api: iMink: {res.text}")
 		return res.json()
 
 	def get_nso_f(self, id_token, guid):
