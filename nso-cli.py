@@ -116,9 +116,13 @@ def s2Command(words):
 	if command == 'get-ranks':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s2.get_ranks()))
+	elif command == 'get-store-merchandise':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s2.get_store_merchandise()))
 	elif command == '--help':
 		print("Subcommands of 's2' are:")
 		print("  get-ranks")
+		print("  get-store-merchandise")
 	else:
 		print(f"Unknown s2 command '{command}'. Try '--help' for help.")
 
@@ -158,6 +162,9 @@ def s3Command(words):
 	elif command == 'get-player-stats-full':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_player_stats_full()))
+	elif command == 'get-tw-history-list':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.s3.get_tw_history_list()))
 	elif command == 'get-battle-history-list':
 		args = grabArguments(words, 0, 0, [])
 		print(json.dumps(nso.s3.get_battle_history_list()))
@@ -239,6 +246,7 @@ def s3Command(words):
 		print("  get-player-stats-full")
 		print("  get-battle-history-list")
 		print("  get-battle-history-details <battlenum>")
+		print("  get-tw-history-list")
 		print("  get-salmon-run-history-list")
 		print("  get-salmon-run-history-details <shiftnum>")
 		print("  get-outfits")
