@@ -9,7 +9,7 @@ from .nso_expiring_token import NSO_Expiring_Token
 import nso_api.utils
 
 class NSO_API_S3:
-	FALLBACK_VERSION = {"version": "3.0.0", "revision": "2857bc50653d316cb69f017b2eef24d2ae56a1b7"}
+	FALLBACK_VERSION = {"version": "3.0.0", "revision": "0742bda0f28edfcda33ec743b8afc4a95700e27d"}
 
 	GRAPHQL_QUERY_IDS = {
 		'LatestBattleHistoriesQuery':              '0176a47218d830ee447e10af4a287b3f',
