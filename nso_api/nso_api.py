@@ -65,7 +65,7 @@ class NSO_JSON_Response:
 		return self.payload.get('result')
 
 class NSO_API:
-	FALLBACK_APP_VERSION = "2.5.0"
+	FALLBACK_APP_VERSION = "2.5.1"
 
 	global_data = {}
 	global_callbacks = {}
@@ -624,12 +624,13 @@ class NSO_API:
 			return False
 
 		guid = str(uuid.uuid4())
-		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid)
+		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid, self.user_info['id'])
 		if not nso_f_dict:
 			self.errors.append("Could not get nso f hash from f_provider")
 			return False
 
-		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], nso_f_dict['request_id']))
+		print(repr(nso_f_dict))
+		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], guid))
 		if not api_login_response:
 			self.errors.append("API login request failed")
 			return False
@@ -655,7 +656,7 @@ class NSO_API:
 			return False
 
 		guid = str(uuid.uuid4())
-		app_f_dict = self.f_provider.get_app_f(self.api_login.value, guid)
+		app_f_dict = self.f_provider.get_app_f(self.api_login.value, guid, self.user_info['id'])
 		if not app_f_dict:
 			self.errors.append("Could not get app f hash from f_provider")
 			return False
