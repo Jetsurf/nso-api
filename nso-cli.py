@@ -287,6 +287,10 @@ if (len(sys.argv) == 2):
 	elif sys.argv[1] == '--version':
 		print(f"NSO-API version: {nso.get_version()}")
 		exit(0)
+	elif sys.argv[1] == "--expire-keys":
+		nso.expire_keys()
+		print("Expired keys.")
+		exit(0)
 	else:
 		showUsageMessage()
 		exit(1)

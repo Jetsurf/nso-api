@@ -629,7 +629,6 @@ class NSO_API:
 			self.errors.append("Could not get nso f hash from f_provider")
 			return False
 
-		print(repr(nso_f_dict))
 		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], guid))
 		if not api_login_response:
 			self.errors.append("API login request failed")

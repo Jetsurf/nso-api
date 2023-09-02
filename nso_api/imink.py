@@ -18,7 +18,7 @@ class IMink:
 	def create_f_request(self, id_token, guid, method, nsaid):
 		api_app_head = {
 			'Content-Type': 'application/json; charset=utf-8',
-			'User-Agent' : self.user_agent
+			'User-Agent': self.user_agent
 		}
 		api_app_body = {
 			'hash_method':  str(method),
@@ -33,8 +33,9 @@ class IMink:
 	def get_f(self, method, id_token, guid, nsaid):
 		req = self.create_f_request(id_token, guid, method, nsaid)
 		res = self.session.send(self.session.prepare_request(req))
+
 		if res.status_code != 200:
-			print(f'Unexpected HTTP code {res.status_code} from imink f')
+			print(f'Unexpected HTTP code "{res.status_code} {res.reason}" from imink f')
 			return None
 
 		#print(f"nso-api: iMink: {res.text}")
