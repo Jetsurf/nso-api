@@ -273,12 +273,12 @@ if (len(sys.argv) == 2):
 	if sys.argv[1] == "--login":
 		url = nso.get_login_challenge_url()
 		print(f"Login challenge URL: {url}")
-		input = ""
-		while not "://" in input:
+		user_input = ""
+		while not "://" in user_input:
 			print("Paste login URL here:")
-			input = sys.stdin.readline().rstrip()
+			user_input = input().rstrip()
 
-		if nso.complete_login_challenge(input):
+		if nso.complete_login_challenge(user_input):
 			print("Login OK")
 			exit(0)
 		else:
