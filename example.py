@@ -19,7 +19,7 @@ def save_json_file(filename, data):
 
 def handle_keys_update(nso, context):
 	print(f"Keys updated for context '{context}'. Saving...")
-	save_json_file("nso_tokens.json", nso.get_keys())
+	save_json_file("nso_tokens.json", nso.get_user_data())
 
 def handle_global_data_update(nso, data):
 	print(f"Global data updated. Saving...")
@@ -36,16 +36,16 @@ imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
 context = 123
 
 nso = NSO_API(imink, context)
-nso.on_keys_update(handle_keys_update)
+nso.on_user_data_update(handle_keys_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
 
-nso.set_global_data(load_json_file("nso_global_data.json"))
+nso.load_global_data(load_json_file("nso_global_data.json"))
 
 keys = load_json_file("nso_tokens.json")
 if keys:
 	print("I have saved keys, skipping login")
-	nso.set_keys(keys)
+	nso.load_user_data(keys)
 else:
 	url = nso.get_login_challenge_url()
 	print(f"Login challenge URL: {url}")
