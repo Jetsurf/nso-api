@@ -2,6 +2,7 @@ import time
 import requests
 import re
 import json
+from datetime import datetime
 
 from .nso_expiring_token import NSO_Expiring_Token
 
@@ -257,3 +258,12 @@ class NSO_API_ACNH:
 		body['body'] = emote
 		referrer = 'https://web.sd.lp1.acbaa.srv.nintendo.net/players/reaction'
 		return self.post_message(referrer, body)
+
+	def get_catalog_items_latest(self):
+		return self.get_authed_json("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/catalog_items/latest")
+
+	def get_catalog_items_favorites(self):
+		return self.get_authed_json("https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/catalog_items/favorites")
+
+	def get_catalog_items(self):
+		return self.get_authed_json(f"https://web.sd.lp1.acbaa.srv.nintendo.net/api/sd/v1/catalog_items?language=en-US&current_year={datetime.now().strftime('%Y')}")
