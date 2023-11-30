@@ -646,12 +646,15 @@ class NSO_API:
 		return True
 
 	# Gets the web_service_token for a specific game id.
-        # Returns an NSO_Expiring_Token object on success.
+	# Returns an NSO_Expiring_Token object on success.
 	def get_web_service_token(self, game_id):
 		if not self.ensure_api_login():
 			return None
 
 		if not self.ensure_app_version():
+			return False
+
+		if not self.ensure_user_info():
 			return False
 
 		guid = str(uuid.uuid4())

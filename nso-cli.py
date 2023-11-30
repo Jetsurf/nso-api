@@ -7,6 +7,10 @@ import sys
 from nso_api.nso_api import NSO_API
 from nso_api.imink import IMink
 
+opts = {}
+opts["user_data_file"] = "nso_tokens.json"
+opts["global_data_file"] = "nso_global_data.json"
+
 # Utility function to load JSON from a file
 def load_json_file(filename):
 	if not os.path.exists(filename):
@@ -21,10 +25,10 @@ def save_json_file(filename, keys):
 
 # The NSO client object will trigger this callback when the tokens change.
 def handle_user_data_update(nso, context):
-	save_json_file("nso_tokens.json", nso.get_user_data())
+	save_json_file(opts["user_data_file"], nso.get_user_data())
 
 def handle_global_data_update(data):
-	save_json_file("nso_global_data.json", data)
+	save_json_file(opts["global_data_file"], data)
 
 # The NSO client object will trigger this callback when it detects that the
 #  account is logged out.
@@ -33,20 +37,22 @@ def handle_logged_out(nso, context):
 
 # This function loads our existing tokens (if any) from the token file.
 def load_tokens(nso):
-	keys = load_json_file("nso_tokens.json")
+	keys = load_json_file(opts["user_data_file"])
 	if keys:
 		nso.load_user_data(keys)
 
 def load_global_data(nso):
-	data = load_json_file("nso_global_data.json")
+	data = load_json_file(opts["global_data_file"])
 	if data:
 		nso.load_global_data(data)
 
 def showUsageMessage():
-	print(f"Usage: {sys.argv[0]} <category> <command>")
-	print(f"       {sys.argv[0]} <category> --help")
-	print(f"       {sys.argv[0]} --login")
-	print("Categories are: app account s2 s3")
+	print(f"Usage: {sys.argv[0]} [options] <category> <command>")
+	print(f"       {sys.argv[0]} [options] <category> --help")
+	print(f"       {sys.argv[0]} [options] --login")
+	print("Categories are: app account s2 s3 acnh")
+	print("Options are:")
+	print("  --user-data-file <filename>   Use the given file for user-specific token data (default 'nso_tokens.json')")
 	return
 
 def grabArguments(args, min, max, names):
@@ -256,6 +262,21 @@ def s3Command(words):
 	else:
 		print(f"Unknown s3 command '{command}'. Try '--help' for help.")
 
+def acnhCommand(words):
+	command = words.pop(0)
+	if command == 'get-emotes':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.acnh.get_emotes()))
+	elif command == 'get-catalog-items-latest':
+		args = grabArguments(words, 0, 0, [])
+		print(json.dumps(nso.acnh.get_catalog_items_latest()))
+	elif command == '--help':
+		print("Subcommands of 'acnh' are:")
+		print("  get-emotes")
+		print("  get-catalog-items-latest")
+	else:
+		print(f"Unknown acnh command '{command}'. Try '--help' for help.")
+
 imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
 
 # Create NSO client object
@@ -264,13 +285,24 @@ nso.on_user_data_update(handle_user_data_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
 
+# Option args
+args = sys.argv[1:]
+while len(args) and args[0][0:2] == "--":
+	if args[0] == "--user-data-file":
+		args.pop(0)
+		opts["user_data_file"] = args.pop(0)
+	else:
+		print("Unknown option argument!")
+		showUsageMessage()
+		exit(1)
+
 # Load tokens into client object
 load_tokens(nso)
 load_global_data(nso)
 
-# Handle single-arg possibilities first
-if (len(sys.argv) == 2):
-	if sys.argv[1] == "--login":
+# Options that can't be used with other commands
+if (len(args) == 1):
+	if args[0] == "--login":
 		url = nso.get_login_challenge_url()
 		print(f"Login challenge URL: {url}")
 		user_input = ""
@@ -284,10 +316,10 @@ if (len(sys.argv) == 2):
 		else:
 			print(f"Login failed: {nso.get_error_message()}")
 			exit(1)
-	elif sys.argv[1] == '--version':
+	elif args[0] == '--version':
 		print(f"NSO-API version: {nso.get_version()}")
 		exit(0)
-	elif sys.argv[1] == "--expire-keys":
+	elif args[0] == "--expire-keys":
 		nso.expire_keys()
 		print("Expired keys.")
 		exit(0)
@@ -300,19 +332,21 @@ if not nso.is_logged_in():
 	print(f"You are not logged in. Try: {sys.argv[0]} --login")
 	exit(1)
 
-if len(sys.argv) < 3:
+if len(args) < 2:
 	showUsageMessage()
 	exit(1)
 
-category = sys.argv[1]
+category = args[0]
 if category == 'app':
-	appCommand(sys.argv[2:])
+	appCommand(args[1:])
 elif category == 'account':
-	accountCommand(sys.argv[2:])
+	accountCommand(args[1:])
 elif category == 's2':
-	s2Command(sys.argv[2:])
+	s2Command(args[1:])
 elif category == 's3':
-	s3Command(sys.argv[2:])
+	s3Command(args[1:])
+elif category == 'acnh':
+  acnhCommand(args[1:])
 elif category == '--help':
 	showUsageMessage()
 	exit(1)
