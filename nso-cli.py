@@ -291,6 +291,9 @@ while len(args) and args[0][0:2] == "--":
 	if args[0] == "--user-data-file":
 		args.pop(0)
 		opts["user_data_file"] = args.pop(0)
+	elif args[0] == "--override-app-version":
+		args.pop(0)
+		opts["override_app_version"] = args.pop(0)
 	else:
 		print("Unknown option argument!")
 		showUsageMessage()
@@ -299,6 +302,10 @@ while len(args) and args[0][0:2] == "--":
 # Load tokens into client object
 load_tokens(nso)
 load_global_data(nso)
+
+# Override app version if requested
+if "override_app_version" in opts:
+	nso.override_app_version(opts["override_app_version"])
 
 # Options that can't be used with other commands
 if (len(args) == 1):

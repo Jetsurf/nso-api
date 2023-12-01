@@ -65,7 +65,7 @@ class NSO_JSON_Response:
 		return self.payload.get('result')
 
 class NSO_API:
-	FALLBACK_APP_VERSION = "2.5.1"
+	FALLBACK_APP_VERSION = "2.8.0"
 
 	global_data = {}
 	global_callbacks = {}
@@ -82,6 +82,7 @@ class NSO_API:
 		self.api_login = None
 		self.user_info = None
 		self.last_activity_time = time.time()
+		self.app_version_override = None
 		self.cache = {}
 		self.app = NSO_API_App(self)
 		self.s2 = NSO_API_S2(self)
@@ -513,8 +514,17 @@ class NSO_API:
 		self.notify_user_data_update()
 		return True
 
+	# Override the app_version to a specific version number
+	def override_app_version(self, version):
+		self.app_version_override = version
+
 	# Ensures we have a Nintendo app version.
 	def ensure_app_version(self):
+		if self.app_version_override is not None:
+			if self.debug & 0x04:
+				print(f"App version: Overridden to: {repr(self.app_version_override)}")
+			return True
+
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
 			if self.debug & 0x04:
@@ -545,6 +555,11 @@ class NSO_API:
 		return True
 
 	def get_app_version(self):
+		if self.app_version_override is not None:
+			if self.debug & 0x04:
+				print(f"App version: Using override version '{self.app_version_override}'")
+			return self.app_version_override
+
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
 			if self.debug & 0x04:
