@@ -294,6 +294,15 @@ while len(args) and args[0][0:2] == "--":
 	elif args[0] == "--override-app-version":
 		args.pop(0)
 		opts["override_app_version"] = args.pop(0)
+	elif args[0] == "--login":
+		args.pop(0)
+		opts["login"] = True
+	elif args[0] == "--expire-keys":
+		args.pop(0)
+		opts["expire_keys"] = True
+	elif args[0] == "--version":
+		print(f"NSO-API version: {nso.get_version()}")
+		exit(0)
 	else:
 		print("Unknown option argument!")
 		showUsageMessage()
@@ -308,31 +317,24 @@ if "override_app_version" in opts:
 	nso.override_app_version(opts["override_app_version"])
 
 # Options that can't be used with other commands
-if (len(args) == 1):
-	if args[0] == "--login":
-		url = nso.get_login_challenge_url()
-		print(f"Login challenge URL: {url}")
-		user_input = ""
-		while not "://" in user_input:
-			print("Paste login URL here:")
-			user_input = input().rstrip()
+if opts.get("login"):
+	url = nso.get_login_challenge_url()
+	print(f"Login challenge URL: {url}")
+	user_input = ""
+	while not "://" in user_input:
+		print("Paste login URL here:")
+		user_input = input().rstrip()
 
-		if nso.complete_login_challenge(user_input):
-			print("Login OK")
-			exit(0)
-		else:
-			print(f"Login failed: {nso.get_error_message()}")
-			exit(1)
-	elif args[0] == '--version':
-		print(f"NSO-API version: {nso.get_version()}")
+	if nso.complete_login_challenge(user_input):
+		print("Login OK")
 		exit(0)
-	elif args[0] == "--expire-keys":
+	else:
+		print(f"Login failed: {nso.get_error_message()}")
+		exit(1)
+elif opts.get("expire_keys"):
 		nso.expire_keys()
 		print("Expired keys.")
 		exit(0)
-	else:
-		showUsageMessage()
-		exit(1)
 
 # Can't continue if not logged in
 if not nso.is_logged_in():
