@@ -50,11 +50,11 @@ if keys:
 else:
 	url = nso.get_login_challenge_url()
 	print(f"Login challenge URL: {url}")
-	input = ""
-	while not "://" in input:
+	user_input = ""
+	while not "://" in user_input:
 		print("Paste login URL here:")
-		input = sys.stdin.readline().rstrip()
-	if not nso.complete_login_challenge(input):
+		user_input = input().rstrip()
+	if not nso.complete_login_challenge(user_input):
 		print(f"Login failed: {nso.get_error_message()}")
 		exit(1)
 
