@@ -36,6 +36,7 @@ imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
 context = 123
 
 nso = NSO_API(imink, context)
+#nso.app_version_override = "2.7.1"
 nso.on_user_data_update(handle_keys_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
