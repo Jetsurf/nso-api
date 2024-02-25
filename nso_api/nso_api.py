@@ -65,7 +65,9 @@ class NSO_JSON_Response:
 		return self.payload.get('result')
 
 class NSO_API:
-	FALLBACK_APP_VERSION = "2.8.0"
+	FALLBACK_APP_VERSION = "2.8.1"
+
+	DEBUG_APP_VERSION = 0x04
 
 	global_data = {}
 	global_callbacks = {}
@@ -95,6 +97,10 @@ class NSO_API:
 	@classmethod
 	def get_version(cls):
 		return __version__
+
+	def debug_message(self, level, message):
+		if self.debug & level:
+			print(message)
 
 	# Given an NSO_JSON_Response object, records an error message and
 	#  returns True if it was an error.
@@ -521,33 +527,38 @@ class NSO_API:
 	# Ensures we have a Nintendo app version.
 	def ensure_app_version(self):
 		if self.app_version_override is not None:
-			if self.debug & 0x04:
-				print(f"App version: Overridden to: {repr(self.app_version_override)}")
+			self.debug_message(self.DEBUG_APP_VERSION, f"App version: Overridden to: {repr(self.app_version_override)}")
 			return True
 
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
-			if self.debug & 0x04:
-				print(f"App version: Cached data: {repr(app_version)}")
+			self.debug_message(self.DEBUG_APP_VERSION, f"App version: Cached data: {repr(app_version)}")
 			if time.time() < app_version['expiretime']:
-				if self.debug & 0x04:
-					print(f"App version: Cached version still fresh.")
+				self.debug_message(self.DEBUG_APP_VERSION, f"App version: Cached version still fresh.")
 				return True
 
-		if self.debug & 0x04:
-			print("App version: Cached version out of date, checking...")
+		self.debug_message(self.DEBUG_APP_VERSION, "App version: Cached version out of date...")
 
+		if hasattr(self.f_provider, "get_supported_app_version") and callable(self.f_provider.get_supported_app_version):
+			self.debug_message(self.DEBUG_APP_VERSION, "App version: F provider supports app versions, checking...")
+			version = self.f_provider.get_supported_app_version()
+			if version and re.match(r'^\d+\.\d+\.\d+$', version):
+				now = int(time.time())
+				expiretime = now + (24 * 3600)
+				self.set_global_data_value("app_version", {"retrievetime": now, "expiretime": expiretime, "data": {"version": version}})
+				self.debug_message(self.DEBUG_APP_VERSION, f"App version: F provider reported version '{version}'...")
+				return True
+
+		self.debug_message(self.DEBUG_APP_VERSION, "App version: Checking app store")
 		version = self.app.get_version()
 		if version is None:
-			if self.debug & 0x04:
-				print(f"  Failed to get app version, using fallback version {self.FALLBACK_APP_VERSION}")
+			self.debug_message(self.DEBUG_APP_VERSION, f"  Failed to get app version, using fallback version {self.FALLBACK_APP_VERSION}")
 			now = int(time.time())
 			expiretime = now + 3600
 			self.set_global_data_value("app_version", {"retrievetime": now, "expiretime": expiretime, "data": {"version": self.FALLBACK_APP_VERSION, "fallback": True}})
 			return False
 
-		if self.debug & 0x04:
-			print(f"  Found app version: {version}")
+		self.debug_message(self.DEBUG_APP_VERSION, f"  Found app version: {version}")
 
 		now = int(time.time())
 		expiretime = now + (24 * 3600)
@@ -556,18 +567,15 @@ class NSO_API:
 
 	def get_app_version(self):
 		if self.app_version_override is not None:
-			if self.debug & 0x04:
-				print(f"App version: Using override version '{self.app_version_override}'")
+			self.debug_message(self.DEBUG_APP_VERSION, f"App version: Using override version '{self.app_version_override}'")
 			return self.app_version_override
 
 		app_version = self.get_global_data_value("app_version")
 		if app_version is not None:
-			if self.debug & 0x04:
-				print(f"App version: Using cached version '{app_version['data']['version']}'")
+			self.debug_message(self.DEBUG_APP_VERSION, f"App version: Using cached version '{app_version['data']['version']}'")
 			return app_version['data']['version']
 
-		if self.debug & 0x04:
-			print(f"App version: Using fallback version '{self.FALLBACK_APP_VERSION}'")
+		self.debug_message(self.DEBUG_APP_VERSION, f"App version: Using fallback version '{self.FALLBACK_APP_VERSION}'")
 		return self.FALLBACK_APP_VERSION
 
 	# Ensures we have fresh api_tokens.
