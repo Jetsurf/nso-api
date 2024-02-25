@@ -84,7 +84,7 @@ class NSO_API:
 		self.last_activity_time = time.time()
 		self.app_version_override = None
 		self.cache = {}
-		self.app = NSO_API_App(self)
+		self.app = NSO_API_App(self, f_provider)
 		self.s2 = NSO_API_S2(self)
 		self.s3 = NSO_API_S3(self)
 		self.acnh = NSO_API_ACNH(self)

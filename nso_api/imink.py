@@ -46,3 +46,10 @@ class IMink:
 
 	def get_app_f(self, web_api_token, guid, nsaid):
 		return self.get_f(2, web_api_token, guid, nsaid)
+
+	def get_supported_app_ver(self):
+		req = requests.Request("GET", "https://api.imink.jone.wang/config")
+		res = self.session.send(self.session.prepare_request(req))
+		print(f"DEBUG: {res.text}")
+		ver = json.loads(res.text)["nso_version"]
+		return ver
