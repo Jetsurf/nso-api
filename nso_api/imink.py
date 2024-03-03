@@ -1,9 +1,10 @@
 # https://github.com/JoneWang/imink/wiki/imink-API-Documentation
+# https://github.com/imink-app/f-API
 import json, sys
 import requests
 
 class IMink:
-	PREFIX_URL = "https://api.imink.jone.wang"
+	PREFIX_URL = "https://api.imink.app"
 
 	def __init__(self, user_agent, prefix_url = PREFIX_URL):
 		if user_agent == None:
