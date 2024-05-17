@@ -65,7 +65,7 @@ class NSO_JSON_Response:
 		return self.payload.get('result')
 
 class NSO_API:
-	FALLBACK_APP_VERSION = "2.8.1"
+	FALLBACK_APP_VERSION = "2.10.0"
 
 	DEBUG_APP_VERSION = 0x04
 
