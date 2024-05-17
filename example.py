@@ -17,11 +17,11 @@ def save_json_file(filename, data):
 	with open(filename, 'w') as f:
 		json.dump(data, f)
 
-def handle_keys_update(nso, context):
-	print(f"Keys updated for context '{context}'. Saving...")
+def handle_user_data_update(nso, context):
+	print(f"User data updated for context '{context}'. Saving...")
 	save_json_file("nso_tokens.json", nso.get_user_data())
 
-def handle_global_data_update(nso, data):
+def handle_global_data_update(data):
 	print(f"Global data updated. Saving...")
 	save_json_file("nso_global_data.json", data)
 
@@ -37,7 +37,7 @@ context = 123
 
 nso = NSO_API(imink, context)
 #nso.app_version_override = "2.7.1"
-nso.on_user_data_update(handle_keys_update)
+nso.on_user_data_update(handle_user_data_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
 
