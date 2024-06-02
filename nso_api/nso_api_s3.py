@@ -475,6 +475,9 @@ class NSO_API_S3:
 	def get_replay_list(self):
 		return self.do_graphql_request('ReplayQuery', {})
 
+	def get_replay_refresh_list(self):
+		return self.do_graphql_request('ReplayUploadedReplayListRefetchQuery', {})
+
 	# Used to collect data for LeanYoshi's gear seed checker at https://leanny.github.io/splat3seedchecker/.
 	def get_gear_seed_data(self):
 		# Get outfits data
