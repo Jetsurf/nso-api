@@ -5,7 +5,8 @@ import requests
 
 class IMink:
 	PREFIX_URL = "https://api.imink.app"
-
+	PROJECT_URL = "https://github.com/imink-app/f-API"
+	
 	def __init__(self, user_agent, prefix_url = PREFIX_URL):
 		if user_agent == None:
 			print("nso-api: User Agent for iMink is not present! Please set one with a method of contact from iMink.")

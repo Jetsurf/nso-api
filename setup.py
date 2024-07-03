@@ -8,7 +8,7 @@ setup(
     packages=find_packages(include=['nso_api']),
     version = __version__,
     description='Nintendo Switch Online API Python Library',
-    author='jetsurf#8514, Andy#3003',
+    author='jetsurf, 616e6479',
     license='GPL',
     install_requires=['requests'],
     setup_requires=[],

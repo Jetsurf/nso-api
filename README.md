@@ -5,11 +5,15 @@ Aims to be an *updated* library to support communicating with Nintendo's Switch 
 See example.py for a quick example of how to setup a session token, request game service tokens, and retrieve basic data from Nintendo.
 
 ## Installation
-Easiest way to install this is to use git to clone a copy
+This package is available through pip. Install with
+
+`pip3 install nso-api`
+
+To build from this repo directly, clone the repo
 
 `git clone https://github.com/Jetsurf/nso-api.git`
 
-The install with pip3
+Then install with pip3
 
 `pip3 install .` (from cloned directory)
 
@@ -18,12 +22,7 @@ The install with pip3
 
 [iMink](https://github.com/JoneWang/imink) - [@jonewang](https://twitter.com/JoneWang) - Built-in F-Token provider
 
-## TODO
-- [X] Splatoon 2 API Endpoints
-  - Note: Splatfest endpoints are not present. Likely not to be implemented soon due to SplatFests for S2 being done
-- [X] Animal Crossing New Horizons API Passport Endpoints
-- [X] Login support through iMink
-- [X] ACNH "Extras" (ingame/chat support)
-- [X] Splatoon 3 API Endpoints
+[NXApi](https://github.com/samuelthomas2774/nxapi-znca-api) - [@samuelelliott](https://x.com/_samuelelliott) - Built-in F-Token provider
 
-Under construction, keep checking if interested!
+## TODO 
+Documentation

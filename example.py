@@ -6,6 +6,7 @@ import sys
 
 from nso_api.nso_api import NSO_API
 from nso_api.imink import IMink
+from nso_api.nxapi import NXApi #For NXAPI use, only 1 f-provider is needed
 
 def load_json_file(filename):
 	if not os.path.exists(filename):
@@ -28,7 +29,8 @@ def handle_global_data_update(data):
 def handle_logged_out(nso, context):
 	print(f"Client for context '{context}' was logged out.")
 
-imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
+imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf)")
+#nsapi = NXApi(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf)") ## For NXApi use instead
 
 # Context is a value of your choice that will be provided to callbacks. If you
 #  create multiple client objects, you can use it to tell them apart. If you
