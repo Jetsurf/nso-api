@@ -2,6 +2,7 @@ import requests
 import urllib
 import json
 import base64
+import uuid
 import os
 import hashlib
 import uuid
@@ -318,6 +319,7 @@ class NSO_API:
 		headers['User-Agent'] = f'com.nintendo.znca/{self.get_app_version()} (Android/7.1.2)'
 		headers['Accept'] = 'application/json'
 		headers['X-ProductVersion'] = self.get_app_version()
+		headers['x-integritytokenerror'] = 'NETWORK_ERROR'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Connection'] = 'Keep-Alive'
 		headers['Authorization'] = 'Bearer'
@@ -346,6 +348,7 @@ class NSO_API:
 		headers['User-Agent'] = f'com.nintendo.znca/{self.get_app_version()} (Android/7.1.2)'
 		headers['Accept'] = 'application/json'
 		headers['X-ProductVersion'] = self.get_app_version()
+		headers['X-IntegrityTokenError'] = 'NETWORK_ERROR'
 		headers['Content-Type'] = 'application/json; charset=utf-8'
 		headers['Connection'] = 'Keep-Alive'
 		headers['Authorization'] = f'Bearer {self.api_login.value}'
@@ -646,13 +649,12 @@ class NSO_API:
 			self.errors.append("Could not get api_tokens")
 			return False
 
-		guid = str(uuid.uuid4())
-		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], guid, self.user_info['id'])
+		nso_f_dict = self.f_provider.get_nso_f(self.api_tokens.value['id_token'], self.user_info['id'])
 		if not nso_f_dict:
 			self.errors.append("Could not get nso f hash from f_provider")
 			return False
 
-		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], guid))
+		api_login_response = self.do_json_request(self.create_api_login_request(nso_f_dict['f'], nso_f_dict['timestamp'], nso_f_dict['request_id']))
 		if not api_login_response:
 			self.errors.append("API login request failed")
 			return False
@@ -680,13 +682,12 @@ class NSO_API:
 		if not self.ensure_user_info():
 			return False
 
-		guid = str(uuid.uuid4())
-		app_f_dict = self.f_provider.get_app_f(self.api_login.value, guid, self.user_info['id'])
+		app_f_dict = self.f_provider.get_app_f(self.api_login.value, self.user_info['id'])
 		if not app_f_dict:
 			self.errors.append("Could not get app f hash from f_provider")
 			return False
 
-		web_service_token_response = self.do_json_request(self.create_web_service_token_request(game_id, app_f_dict['f'], app_f_dict['timestamp'], guid))
+		web_service_token_response = self.do_json_request(self.create_web_service_token_request(game_id, app_f_dict['f'], app_f_dict['timestamp'], app_f_dict['request_id']))
 		if not web_service_token_response:
 			return None
 		elif web_service_token_response.get("status") != 0:
