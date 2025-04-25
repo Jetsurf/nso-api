@@ -35,10 +35,16 @@ class NXApi:
 		return req
 
 	def print_debug(self, req):
-		print(f"{req.method} {req.url}")
+		if isinstance(req, requests.Request):
+			print(f"{req.method} {req.url}")
+		elif isinstance(req, requests.Response):
+			print(f"{str(req.status_code)} {req.reason}")
 		for k, v in req.headers.items():
 			print(f"{k}: {v}")
-		print(f"\n{req.data}")
+		if isinstance(req, requests.Request):
+			print(req.data)
+		elif isinstance(req, requests.Response):
+			print(req.text)
 
 	def get_f(self, method, id_token, nsaid):
 		req = self.create_f_request(id_token, method, nsaid)
