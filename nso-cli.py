@@ -5,7 +5,7 @@ import os.path
 import sys
 
 from nso_api.nso_api import NSO_API
-from nso_api.imink import IMink
+from nso_api.nxapi import NXApi
 
 opts = {}
 opts["user_data_file"] = "nso_tokens.json"
@@ -277,10 +277,10 @@ def acnhCommand(words):
 	else:
 		print(f"Unknown acnh command '{command}'. Try '--help' for help.")
 
-imink = IMink(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf#8514)")
+nxapi = NXApi(f"nso-cli.py {NSO_API.get_version()} (discord=jetsurf)")
 
 # Create NSO client object
-nso = NSO_API(imink)
+nso = NSO_API(nxapi)
 nso.on_user_data_update(handle_user_data_update)
 nso.on_global_data_update(handle_global_data_update)
 nso.on_logged_out(handle_logged_out)
