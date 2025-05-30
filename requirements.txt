@@ -1,3 +1,5 @@
 requests
 itunes-app-scraper-dmi
+beautifulsoup4
+html5lib
 
