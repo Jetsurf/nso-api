@@ -7,7 +7,7 @@ name = "jetsurf and 616e6479 (Discord)"
 
 [project]
 name = "nso-api"
-version = "0.9.17"
+version = "0.9.18"
 readme = "README.md"
 requires-python = ">=3.6"
 classifiers = [
